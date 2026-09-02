@@ -51,6 +51,11 @@ abstract final class AppTypography {
   /// Screen headers styled as serif titles (`.h-title`/`.listhead h2`, 22px).
   static TextStyle get screenTitle => _fraunces(size: 22, color: AppColors.text);
 
+  /// A single large digit on the app-lock PIN keypad — not from the
+  /// mockup (which has no lock-screen concept), sized to feel like a
+  /// natural extension of the same serif/big-figure language.
+  static TextStyle get keypadDigit => _fraunces(size: 28, color: AppColors.text);
+
   /// Summary-strip figures and fd-card amounts (`.summary-strip .cell .n`,
   /// `.fd-card .top .amt`, 16px).
   static TextStyle get statFigure => _fraunces(size: 16, color: AppColors.text);

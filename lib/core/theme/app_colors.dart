@@ -56,4 +56,12 @@ abstract final class AppColors {
 
   /// Text on the brass CTA button (`.cta`, "Create deposit").
   static const ctaText = Color(0xFF3A2705);
+
+  /// Material's default error red — used by [AppTheme]'s `ColorScheme`
+  /// and directly wherever an error needs coloring outside a widget that
+  /// already has `Theme.of(context).colorScheme.error` in scope (e.g. the
+  /// app-lock PIN screens, which are shown before the rest of the app's
+  /// chrome is relevant). Not part of the mockup's own palette — the
+  /// mockup never depicts an error state.
+  static const error = Color(0xFFB3261E);
 }

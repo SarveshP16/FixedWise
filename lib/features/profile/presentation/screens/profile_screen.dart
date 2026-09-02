@@ -18,6 +18,7 @@ import '../../../../core/widgets/fixedwise_segmented_control.dart';
 import '../../../deposits/application/fixed_deposits_providers.dart';
 import '../../../holders/application/holders_providers.dart';
 import '../../application/settings_providers.dart';
+import '../widgets/security_section.dart';
 
 /// FixedWise's Profile tab: the app owner's own settings — the mockup's
 /// bottom nav includes a Profile destination but designs no screen for
@@ -149,6 +150,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+            const SecuritySection(),
             const SizedBox(height: 16),
             FixedwiseCard(
               child: ListTile(

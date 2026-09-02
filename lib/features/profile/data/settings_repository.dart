@@ -18,6 +18,7 @@ class SettingsRepository {
   static const _notificationPermissionsRequestedKey = 'notificationPermissionsRequested';
   static const _autoBackupFrequencyKey = 'autoBackupFrequency';
   static const _lastGoogleDriveBackupAtKey = 'lastGoogleDriveBackupAt';
+  static const _biometricUnlockEnabledKey = 'biometricUnlockEnabled';
 
   static const defaultNotificationLeadDays = 7;
 
@@ -66,6 +67,15 @@ class SettingsRepository {
 
   Future<void> setLastGoogleDriveBackupAt(DateTime value) =>
       _box.put(_lastGoogleDriveBackupAtKey, value.toIso8601String());
+
+  /// Whether the app-lock screen should also offer the device's biometric/
+  /// credential unlock as a quick alternative to typing the PIN — only
+  /// meaningful (and only shown as a toggle in Profile) once a PIN is
+  /// actually set. The PIN itself is never optional-out-of once set; this
+  /// only controls whether biometric is offered as a shortcut alongside it.
+  bool getBiometricUnlockEnabled() => (_box.get(_biometricUnlockEnabledKey) as bool?) ?? false;
+
+  Future<void> setBiometricUnlockEnabled(bool value) => _box.put(_biometricUnlockEnabledKey, value);
 
   static SettingsRepository openDefault() {
     return SettingsRepository(Hive.box(HiveBoxes.settings));

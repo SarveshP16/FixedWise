@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.fixedwise.app"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage requires compileSdk 37+ — flutter.compileSdkVersion
+    // (Flutter's own default) hadn't caught up yet at the time this was added.
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

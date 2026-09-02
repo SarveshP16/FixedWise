@@ -17,7 +17,7 @@ abstract final class AppTheme {
       surface: AppColors.card,
       onSurface: AppColors.text,
       outline: AppColors.line,
-      error: Color(0xFFB3261E),
+      error: AppColors.error,
       onError: Colors.white,
     );
 

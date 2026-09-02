@@ -13,6 +13,26 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
   a real, ongoing recovery path.
 
 ### Added
+- **App lock** (PIN + optional biometric unlock), covering the whole app
+  rather than one module — the entire app is financial data. Profile's
+  new "Security" card sets up/changes/turns off a 6-digit PIN
+  (`lib/core/security/`, hashed and stored in platform secure storage —
+  Android Keystore-backed, never the raw digits); once set, the lock
+  screen also auto-attempts biometric/device-credential unlock if
+  enabled, with PIN entry always available as a fallback, and a
+  "Forgot PIN?" path that verifies via the device's own lock screen
+  before letting you set a new one. Re-locks the moment the app is
+  backgrounded (`AppLifecycleState.paused`), not merely `inactive` (which
+  also fires for a permission dialog or the notification shade). The
+  lock screen is layered *over* the routed content in a `Stack`, not
+  swapped in for it — replacing it outright would unmount go_router's
+  own `Navigator` and silently reset every unlock back to the dashboard.
+  Needed two Android-specific setup steps `local_auth` requires:
+  `MainActivity` becoming a `FlutterFragmentActivity`, and `LaunchTheme`'s
+  parent becoming a `Theme.AppCompat.*` variant (its biometric prompt
+  crashes on Android 8 and below otherwise) — plus bumping `compileSdk`
+  to 37 for `flutter_secure_storage`, ahead of Flutter's own default at
+  the time this was added.
 - **Google Drive auto-backup**, with an Off/Weekly/Monthly picker in
   Profile once connected. Checked once at every app launch (not a true
   OS-level background schedule — a deliberate MVP trade-off; see
