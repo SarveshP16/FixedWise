@@ -1,0 +1,135 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:intl/intl.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
+
+import '../../features/deposits/domain/fd_status.dart';
+import '../../features/deposits/domain/fixed_deposit.dart';
+
+const _channelId = 'fd_maturity_reminders';
+const _channelName = 'Maturity reminders';
+const _channelDescription = "Reminders before a Fixed Deposit's maturity date";
+
+/// Schedules and cancels exact-time local notifications for an FD's
+/// upcoming maturity. One notification id per deposit (derived from its
+/// own id), so re-scheduling — an edit, or a lead-time change — always
+/// replaces the previous reminder rather than stacking a second one.
+///
+/// Uses [AndroidScheduleMode.exactAllowWhileIdle] (needs the separate
+/// "Alarms & reminders" permission on Android 12+, requested below) —
+/// an inexact alarm was found to silently never fire once the app's
+/// process is frozen in the background, see
+/// `pulse-app-notification-manifest-gotcha` in this app family's shared
+/// engineering notes. Mirrors Pulse's `TaskReminderService` almost
+/// exactly.
+class MaturityReminderService {
+  MaturityReminderService._();
+
+  static final MaturityReminderService instance = MaturityReminderService._();
+
+  final _plugin = FlutterLocalNotificationsPlugin();
+  bool _initialized = false;
+
+  /// Sets up the notification channel, local timezone, and (Android 13+)
+  /// requests the runtime notification + exact-alarm permissions. Safe to
+  /// call more than once — later calls are a no-op.
+  ///
+  /// Every plugin call in this class is wrapped in try/catch: a reminder
+  /// is a nice-to-have layered on top of Deposits, never something that
+  /// should be able to break creating/editing/closing an FD if the
+  /// platform channel isn't there (as in widget tests, which run with no
+  /// real plugin registered) or a device-specific notification quirk
+  /// throws.
+  Future<void> init() async {
+    if (_initialized) return;
+    _initialized = true;
+
+    tz_data.initializeTimeZones();
+    try {
+      final localTimezone = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(localTimezone.identifier));
+    } catch (_) {
+      // Timezone lookup can fail on some devices/emulators — falling back
+      // to `timezone`'s UTC default beats crashing app startup over it.
+    }
+
+    try {
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const iosInit = DarwinInitializationSettings();
+      await _plugin.initialize(
+        settings: const InitializationSettings(android: androidInit, iOS: iosInit),
+      );
+
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelId,
+          _channelName,
+          description: _channelDescription,
+          importance: Importance.high,
+        ),
+      );
+      await androidPlugin?.requestNotificationsPermission();
+
+      // Android 12+ needs this granted separately from the notification
+      // permission above before an exact alarm can be scheduled at all.
+      await androidPlugin?.requestExactAlarmsPermission();
+    } catch (error, stackTrace) {
+      debugPrint('MaturityReminderService.init failed: $error\n$stackTrace');
+    }
+  }
+
+  int _notificationIdFor(String depositId) => depositId.hashCode & 0x7fffffff;
+
+  /// Schedules (or replaces) [deposit]'s reminder to fire [leadDays] before
+  /// its maturity date at 09:00 local time. No-ops if that time has
+  /// already passed, or the deposit isn't active.
+  Future<void> scheduleReminder(FixedDeposit deposit, {required int leadDays}) async {
+    if (deposit.status != FdStatus.active) {
+      await cancelReminder(deposit.id);
+      return;
+    }
+
+    final maturityDate = deposit.maturityDate;
+    final fireDate = DateTime(maturityDate.year, maturityDate.month, maturityDate.day - leadDays, 9);
+    if (!fireDate.isAfter(DateTime.now())) return;
+
+    try {
+      await _plugin.zonedSchedule(
+        id: _notificationIdFor(deposit.id),
+        title: '${deposit.bankName} matures soon',
+        body: _bodyFor(deposit, maturityDate),
+        scheduledDate: tz.TZDateTime.from(fireDate, tz.local),
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            channelDescription: _channelDescription,
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: deposit.id,
+      );
+    } catch (error, stackTrace) {
+      debugPrint('MaturityReminderService.scheduleReminder failed: $error\n$stackTrace');
+    }
+  }
+
+  Future<void> cancelReminder(String depositId) async {
+    try {
+      await _plugin.cancel(id: _notificationIdFor(depositId));
+    } catch (error, stackTrace) {
+      debugPrint('MaturityReminderService.cancelReminder failed: $error\n$stackTrace');
+    }
+  }
+
+  String _bodyFor(FixedDeposit deposit, DateTime maturityDate) {
+    return 'Matures ${DateFormat('d MMM yyyy').format(maturityDate)}';
+  }
+}
