@@ -8,6 +8,19 @@ import 'backup_models.dart';
 const _driveAppDataScope = 'https://www.googleapis.com/auth/drive.appdata';
 const _backupFileName = 'fixedwise_backup.json';
 
+/// The **Web application**-type OAuth client's ID from the FixedWise
+/// Google Cloud project — not the Android client's. On Android,
+/// `google_sign_in` v7 routes through Android's Credential Manager, which
+/// needs this passed as `serverClientId` to identify which OAuth client
+/// to request tokens for, even though everything here is a purely
+/// client-side (no backend) flow; the Android OAuth client (registered
+/// separately with this app's package name + signing SHA-1) is still
+/// required for Google to recognize the app at all, but its id never
+/// appears in code. OAuth client IDs are public identifiers (unlike
+/// client *secrets*), safe to commit — see
+/// https://developers.google.com/identity/protocols/oauth2/native-app.
+const _androidServerClientId = '325328390604-umapgj6g651h23pgtucrkqo3mhdhisgr.apps.googleusercontent.com';
+
 /// Thrown when Drive backup is attempted before a real Google Sign-In
 /// OAuth client has been configured for this app — see this class's own
 /// doc comment for what that setup involves.
@@ -28,14 +41,21 @@ class GoogleDriveNotConfiguredException implements Exception {
 /// invisible in the user's own Drive UI and to other apps), via direct
 /// Drive v3 REST calls rather than pulling in the full `googleapis` SDK.
 ///
-/// **Needs a manual, one-time setup step this dev environment cannot do**:
-/// creating a Google Cloud OAuth client (Android needs this app's SHA-1
-/// signing fingerprint registered; iOS needs a reversed-client-id URL
-/// scheme in `Info.plist` and a client id). Until that's done, every
-/// method here throws — `Profile` shows Drive backup as "Not connected"
-/// and surfaces that error as a friendly message rather than a crash, the
-/// same pattern Wardro used for its paused AI Stylist feature: the code
-/// is complete and ready, just blocked on an external prerequisite.
+/// Needed a manual, one-time Google Cloud OAuth setup this dev
+/// environment couldn't do itself (the user's own Google account) —
+/// **done for Android**: an Android-type client (this app's package name
+/// + debug-keystore SHA-1) plus a Web-type client (`_androidServerClientId`
+/// above) in the same project, with the Drive API enabled and the
+/// `drive.appdata` scope added to the OAuth consent screen. **Not yet
+/// done for iOS**: needs its own client id and a reversed-client-id URL
+/// scheme in `Info.plist`. Until that's done, iOS calls here throw —
+/// `Profile` surfaces that as a friendly message rather than a crash,
+/// same pattern Wardro used for its paused AI Stylist feature.
+///
+/// Also still only registered against a **debug**-signed build — a
+/// release build is signed with a different keystore/SHA-1 and will need
+/// its own Android OAuth client added to the same project before Drive
+/// backup works in a release APK.
 class GoogleDriveBackupService {
   GoogleDriveBackupService._();
 
@@ -47,7 +67,7 @@ class GoogleDriveBackupService {
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
     try {
-      await GoogleSignIn.instance.initialize();
+      await GoogleSignIn.instance.initialize(serverClientId: _androidServerClientId);
       _initialized = true;
     } catch (error) {
       throw GoogleDriveNotConfiguredException(error);
