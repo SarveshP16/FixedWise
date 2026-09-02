@@ -6,6 +6,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
 ## [Unreleased]
 
 ### Added
+- **Google Drive auto-backup**, with an Off/Weekly/Monthly picker in
+  Profile once connected. Checked once at every app launch (not a true
+  OS-level background schedule — a deliberate MVP trade-off; see
+  `auto_backup.dart`'s doc comment) and runs fully silently either way,
+  success or failure, per the user's choice — Profile's new "Last
+  backup" line is the only visible record. Monthly due-dates use
+  calendar-field arithmetic (same day next month), not a fixed 30-day
+  span, to avoid drift.
+- Fixed a real bug surfaced while building this: `GoogleDriveBackupService`
+  kept its signed-in account only in memory, so it forgot the connection
+  on every app restart and would have failed "not signed in" on every
+  single auto-backup attempt. Now calls `attemptLightweightAuthentication`
+  to silently restore a prior sign-in at first use each launch.
 - **Real app icon** (a coin mark with the ₹ symbol and a brass growth-
   ladder line, on the app's ink-navy background) — replaces the default
   Flutter icon. Sourced from a full export package (adaptive foreground/

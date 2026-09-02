@@ -79,12 +79,34 @@ class GoogleDriveBackupService {
     }
   }
 
-  Future<Map<String, String>> _authHeaders() async {
+  /// `_account` only lives in memory — it's set by [connect] but never
+  /// survives an app restart on its own. Every fresh launch calls this
+  /// first to silently restore a previous sign-in (no UI, no prompt) via
+  /// `attemptLightweightAuthentication`, the API's own recommended way to
+  /// find out "is someone already signed in" at startup. Without this,
+  /// auto-backup (which must run silently, before the user ever revisits
+  /// Profile) would fail with "not signed in" on every single launch,
+  /// having forgotten a connection that was actually still valid.
+  Future<void> _restoreAccountIfNeeded() async {
+    if (_account != null) return;
+    await _ensureInitialized();
+    try {
+      final future = GoogleSignIn.instance.attemptLightweightAuthentication();
+      final account = await future;
+      if (account != null) _account = account;
+    } catch (_) {
+      // No restorable session — callers that need one will report that
+      // via the "not signed in" branch below.
+    }
+  }
+
+  Future<Map<String, String>> _authHeaders({required bool interactive}) async {
+    await _restoreAccountIfNeeded();
     final account = _account;
     if (account == null) throw const GoogleDriveNotConfiguredException('not signed in');
     final headers = await account.authorizationClient.authorizationHeaders(
       [_driveAppDataScope],
-      promptIfNecessary: true,
+      promptIfNecessary: interactive,
     );
     if (headers == null) throw const GoogleDriveNotConfiguredException('authorization was not granted');
     return headers;
@@ -107,9 +129,13 @@ class GoogleDriveBackupService {
   }
 
   /// Uploads the current export as this Drive account's single backup
-  /// snapshot, replacing any previous one.
-  Future<void> backup() async {
-    final headers = await _authHeaders();
+  /// snapshot, replacing any previous one. [interactive] controls whether
+  /// a stale/expired authorization is allowed to prompt the user —
+  /// `false` for the silent auto-backup path (a surprise sign-in prompt
+  /// mid-launch would defeat the point of "silent"), `true` for a manual
+  /// "Back up now" tap.
+  Future<void> backup({bool interactive = true}) async {
+    final headers = await _authHeaders(interactive: interactive);
     final json = buildExportJson();
     final existingId = await _findBackupFileId(headers);
 
@@ -153,7 +179,7 @@ class GoogleDriveBackupService {
   /// Downloads and parses the Drive backup snapshot, or `null` if this
   /// account has never backed up before.
   Future<ParsedBackup?> restore() async {
-    final headers = await _authHeaders();
+    final headers = await _authHeaders(interactive: true);
     final fileId = await _findBackupFileId(headers);
     if (fileId == null) return null;
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/backup/auto_backup_frequency.dart';
 import '../../../../core/backup/backup_models.dart';
 import '../../../../core/backup/google_drive_backup_service.dart';
 import '../../../../core/backup/local_backup_service.dart';
@@ -13,6 +14,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/fixedwise_card.dart';
 import '../../../../core/widgets/fixedwise_field_shell.dart';
+import '../../../../core/widgets/fixedwise_segmented_control.dart';
 import '../../../deposits/application/fixed_deposits_providers.dart';
 import '../../../holders/application/holders_providers.dart';
 import '../../application/settings_providers.dart';
@@ -195,6 +197,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _openGoogleDriveOptions(driveEmail),
                   ),
+                  if (driveEmail != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(left: 40, bottom: 8),
+                      child: Text(_lastBackupLabel(), style: AppTypography.dateLine),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 40),
+                      child: FixedwiseFieldShell(
+                        label: 'Auto backup',
+                        child: FixedwiseSegmentedControl<AutoBackupFrequency>(
+                          options: AutoBackupFrequency.values,
+                          labelBuilder: (value) => value.label,
+                          value: ref.watch(autoBackupFrequencyProvider),
+                          onChanged: (value) => ref.read(autoBackupFrequencyProvider.notifier).setFrequency(value),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -288,13 +308,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
       ..invalidate(displayNameProvider)
       ..invalidate(currencySymbolProvider)
       ..invalidate(notificationLeadDaysProvider)
-      ..invalidate(googleDriveConnectedEmailProvider);
+      ..invalidate(googleDriveConnectedEmailProvider)
+      ..invalidate(autoBackupFrequencyProvider)
+      ..invalidate(lastGoogleDriveBackupAtProvider);
     _nameController.text = ref.read(displayNameProvider);
     _currencyController.text = ref.read(currencySymbolProvider);
     await rescheduleAll(ref.read(fixedDepositsProvider), leadDays: ref.read(notificationLeadDaysProvider));
 
     if (!mounted) return;
     _showMessage('Backup restored');
+  }
+
+  String _lastBackupLabel() {
+    final lastBackupAt = ref.watch(lastGoogleDriveBackupAtProvider);
+    if (lastBackupAt == null) return 'No backup yet';
+    return 'Last backup: ${DateFormat('d MMM yyyy, h:mm a').format(lastBackupAt)}';
   }
 
   void _showMessage(String message) {
@@ -345,6 +373,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
       case 'backup':
         try {
           await GoogleDriveBackupService.instance.backup();
+          await ref.read(lastGoogleDriveBackupAtProvider.notifier).recordNow();
           if (mounted) _showMessage('Backed up to Google Drive');
         } catch (error) {
           if (mounted) _showMessage('$error');
@@ -362,7 +391,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
             ..invalidate(fixedDepositsProvider)
             ..invalidate(displayNameProvider)
             ..invalidate(currencySymbolProvider)
-            ..invalidate(notificationLeadDaysProvider);
+            ..invalidate(notificationLeadDaysProvider)
+            ..invalidate(autoBackupFrequencyProvider)
+            ..invalidate(lastGoogleDriveBackupAtProvider);
           _nameController.text = ref.read(displayNameProvider);
           _currencyController.text = ref.read(currencySymbolProvider);
           await rescheduleAll(ref.read(fixedDepositsProvider), leadDays: ref.read(notificationLeadDaysProvider));

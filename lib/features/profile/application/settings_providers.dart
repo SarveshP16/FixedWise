@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../core/backup/auto_backup_frequency.dart';
 import '../../../core/utils/currency_formatter.dart' show settingsRepositoryProvider;
 import '../data/settings_repository.dart';
 
@@ -53,6 +54,42 @@ class GoogleDriveConnectedEmailNotifier extends StateNotifier<String?> {
   Future<void> setEmail(String? email) async {
     state = email;
     await _repository.setGoogleDriveConnectedEmail(email);
+  }
+}
+
+/// How often FixedWise checks-and-runs a Drive backup on app launch —
+/// see `auto_backup.dart`. Changing this doesn't itself trigger a
+/// backup; the next launch's check picks up the new setting.
+final autoBackupFrequencyProvider = StateNotifierProvider<AutoBackupFrequencyNotifier, AutoBackupFrequency>((ref) {
+  return AutoBackupFrequencyNotifier(ref.watch(settingsRepositoryProvider));
+});
+
+class AutoBackupFrequencyNotifier extends StateNotifier<AutoBackupFrequency> {
+  AutoBackupFrequencyNotifier(this._repository) : super(_repository.getAutoBackupFrequency());
+
+  final SettingsRepository _repository;
+
+  Future<void> setFrequency(AutoBackupFrequency frequency) async {
+    state = frequency;
+    await _repository.setAutoBackupFrequency(frequency);
+  }
+}
+
+/// When the last successful Drive backup (auto or manual) completed, for
+/// Profile's "Last backup" line — `null` if there's never been one.
+final lastGoogleDriveBackupAtProvider = StateNotifierProvider<LastGoogleDriveBackupAtNotifier, DateTime?>((ref) {
+  return LastGoogleDriveBackupAtNotifier(ref.watch(settingsRepositoryProvider));
+});
+
+class LastGoogleDriveBackupAtNotifier extends StateNotifier<DateTime?> {
+  LastGoogleDriveBackupAtNotifier(this._repository) : super(_repository.getLastGoogleDriveBackupAt());
+
+  final SettingsRepository _repository;
+
+  Future<void> recordNow() async {
+    final now = DateTime.now();
+    state = now;
+    await _repository.setLastGoogleDriveBackupAt(now);
   }
 }
 

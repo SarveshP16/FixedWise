@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 
+import '../../../core/backup/auto_backup_frequency.dart';
 import '../../../core/storage/hive_boxes.dart';
 
 /// Reads/writes simple app-wide preferences — a plain key-value Hive box,
@@ -15,6 +16,8 @@ class SettingsRepository {
   static const _notificationLeadDaysKey = 'notificationLeadDays';
   static const _googleDriveConnectedEmailKey = 'googleDriveConnectedEmail';
   static const _notificationPermissionsRequestedKey = 'notificationPermissionsRequested';
+  static const _autoBackupFrequencyKey = 'autoBackupFrequency';
+  static const _lastGoogleDriveBackupAtKey = 'lastGoogleDriveBackupAt';
 
   static const defaultNotificationLeadDays = 7;
 
@@ -50,6 +53,19 @@ class SettingsRepository {
 
   Future<void> setNotificationPermissionsRequested(bool value) =>
       _box.put(_notificationPermissionsRequestedKey, value);
+
+  AutoBackupFrequency getAutoBackupFrequency() =>
+      AutoBackupFrequency.fromStorageKey((_box.get(_autoBackupFrequencyKey) as String?) ?? AutoBackupFrequency.off.storageKey);
+
+  Future<void> setAutoBackupFrequency(AutoBackupFrequency value) => _box.put(_autoBackupFrequencyKey, value.storageKey);
+
+  DateTime? getLastGoogleDriveBackupAt() {
+    final raw = _box.get(_lastGoogleDriveBackupAtKey) as String?;
+    return raw == null ? null : DateTime.tryParse(raw);
+  }
+
+  Future<void> setLastGoogleDriveBackupAt(DateTime value) =>
+      _box.put(_lastGoogleDriveBackupAtKey, value.toIso8601String());
 
   static SettingsRepository openDefault() {
     return SettingsRepository(Hive.box(HiveBoxes.settings));
