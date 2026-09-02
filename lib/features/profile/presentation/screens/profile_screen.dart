@@ -20,13 +20,42 @@ import '../../application/settings_providers.dart';
 /// it, so this is built from scratch to hold everything app-wide that
 /// isn't a specific deposit: display name, currency, reminder lead time,
 /// Holders management, data backup, and About.
-class ProfileScreen extends ConsumerWidget {
+///
+/// A `ConsumerStatefulWidget` (not stateless) so the name/currency fields
+/// can own real `TextEditingController`s — a `TextFormField`'s
+/// `initialValue` is only read once at `initState`, so a stateless
+/// rebuild after a provider change never gets reflected in a field the
+/// user is looking at, and saving only `onFieldSubmitted` (keyboard
+/// "done") meant tapping away without pressing it silently lost the
+/// edit. Both fields now save on every keystroke instead, like every
+/// other setting on this screen.
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final displayName = ref.watch(displayNameProvider);
-    final currencySymbol = ref.watch(currencySymbolProvider);
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _currencyController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: ref.read(displayNameProvider));
+    _currencyController = TextEditingController(text: ref.read(currencySymbolProvider));
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _currencyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final leadDays = ref.watch(notificationLeadDaysProvider);
     final driveEmail = ref.watch(googleDriveConnectedEmailProvider);
 
@@ -44,24 +73,26 @@ class ProfileScreen extends ConsumerWidget {
                   FixedwiseFieldShell(
                     label: 'Your name',
                     child: FixedwiseInputBox(
-                      child: TextFormField(
-                        initialValue: displayName,
+                      child: TextField(
+                        controller: _nameController,
                         style: AppTypography.inputText,
                         decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                        onFieldSubmitted: (value) =>
-                            ref.read(displayNameProvider.notifier).setName(value.trim().isEmpty ? 'there' : value.trim()),
+                        onChanged: (value) => ref
+                            .read(displayNameProvider.notifier)
+                            .setName(value.trim().isEmpty ? 'there' : value.trim()),
                       ),
                     ),
                   ),
                   FixedwiseFieldShell(
                     label: 'Currency symbol',
                     child: FixedwiseInputBox(
-                      child: TextFormField(
-                        initialValue: currencySymbol,
+                      child: TextField(
+                        controller: _currencyController,
                         style: AppTypography.inputText,
                         decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                        onFieldSubmitted: (value) =>
-                            ref.read(currencySymbolProvider.notifier).setSymbol(value.trim().isEmpty ? '\$' : value.trim()),
+                        onChanged: (value) => ref
+                            .read(currencySymbolProvider.notifier)
+                            .setSymbol(value.trim().isEmpty ? '₹' : value.trim()),
                       ),
                     ),
                   ),
@@ -74,11 +105,11 @@ class ProfileScreen extends ConsumerWidget {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.remove_circle_outline),
-                          onPressed: leadDays > 1 ? () => _changeLeadDays(ref, leadDays - 1) : null,
+                          onPressed: leadDays > 1 ? () => _changeLeadDays(leadDays - 1) : null,
                         ),
                         IconButton(
                           icon: const Icon(Icons.add_circle_outline),
-                          onPressed: () => _changeLeadDays(ref, leadDays + 1),
+                          onPressed: () => _changeLeadDays(leadDays + 1),
                         ),
                       ],
                     ),
@@ -109,14 +140,14 @@ class ProfileScreen extends ConsumerWidget {
                     leading: const Icon(Icons.file_upload_outlined),
                     title: const Text('Export to a file'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _exportToFile(context),
+                    onTap: _exportToFile,
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.file_download_outlined),
                     title: const Text('Import from a file'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _importFromFile(context, ref),
+                    onTap: _importFromFile,
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -124,7 +155,7 @@ class ProfileScreen extends ConsumerWidget {
                     title: const Text('Google Drive backup'),
                     subtitle: Text(driveEmail == null ? 'Not connected' : 'Connected as $driveEmail'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _openGoogleDriveOptions(context, ref, driveEmail),
+                    onTap: () => _openGoogleDriveOptions(driveEmail),
                   ),
                 ],
               ),
@@ -145,30 +176,30 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _changeLeadDays(WidgetRef ref, int days) async {
+  Future<void> _changeLeadDays(int days) async {
     await ref.read(notificationLeadDaysProvider.notifier).setLeadDays(days);
     await rescheduleAll(ref.read(fixedDepositsProvider), leadDays: days);
   }
 
-  Future<void> _exportToFile(BuildContext context) async {
+  Future<void> _exportToFile() async {
     try {
       final saved = await LocalBackupService.exportToFile();
-      if (!context.mounted || !saved) return;
-      _showMessage(context, 'Backup saved');
+      if (!mounted || !saved) return;
+      _showMessage('Backup saved');
     } catch (error) {
-      if (context.mounted) _showMessage(context, 'Export failed: $error');
+      if (mounted) _showMessage('Export failed: $error');
     }
   }
 
-  Future<void> _importFromFile(BuildContext context, WidgetRef ref) async {
+  Future<void> _importFromFile() async {
     ParsedBackup? backup;
     try {
       backup = await LocalBackupService.pickAndParseBackup();
     } catch (error) {
-      if (context.mounted) _showMessage(context, '$error');
+      if (mounted) _showMessage('$error');
       return;
     }
-    if (backup == null || !context.mounted) return;
+    if (backup == null || !mounted) return;
 
     final dateText = backup.exportedAt == null
         ? 'an unknown date'
@@ -196,27 +227,27 @@ class ProfileScreen extends ConsumerWidget {
       ..invalidate(currencySymbolProvider)
       ..invalidate(notificationLeadDaysProvider)
       ..invalidate(googleDriveConnectedEmailProvider);
+    _nameController.text = ref.read(displayNameProvider);
+    _currencyController.text = ref.read(currencySymbolProvider);
     await rescheduleAll(ref.read(fixedDepositsProvider), leadDays: ref.read(notificationLeadDaysProvider));
 
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-      ..removeCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Backup restored')));
+    if (!mounted) return;
+    _showMessage('Backup restored');
   }
 
-  void _showMessage(BuildContext context, String message) {
+  void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..removeCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _openGoogleDriveOptions(BuildContext context, WidgetRef ref, String? connectedEmail) async {
+  Future<void> _openGoogleDriveOptions(String? connectedEmail) async {
     if (connectedEmail == null) {
       try {
         final email = await GoogleDriveBackupService.instance.connect();
         await ref.read(googleDriveConnectedEmailProvider.notifier).setEmail(email);
       } catch (error) {
-        if (context.mounted) _showMessage(context, '$error');
+        if (mounted) _showMessage('$error');
       }
       return;
     }
@@ -246,21 +277,21 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
     );
-    if (action == null || !context.mounted) return;
+    if (action == null || !mounted) return;
 
     switch (action) {
       case 'backup':
         try {
           await GoogleDriveBackupService.instance.backup();
-          if (context.mounted) _showMessage(context, 'Backed up to Google Drive');
+          if (mounted) _showMessage('Backed up to Google Drive');
         } catch (error) {
-          if (context.mounted) _showMessage(context, '$error');
+          if (mounted) _showMessage('$error');
         }
       case 'restore':
         try {
           final backup = await GoogleDriveBackupService.instance.restore();
           if (backup == null) {
-            if (context.mounted) _showMessage(context, 'No Drive backup found yet');
+            if (mounted) _showMessage('No Drive backup found yet');
             return;
           }
           await backup.apply();
@@ -270,10 +301,12 @@ class ProfileScreen extends ConsumerWidget {
             ..invalidate(displayNameProvider)
             ..invalidate(currencySymbolProvider)
             ..invalidate(notificationLeadDaysProvider);
+          _nameController.text = ref.read(displayNameProvider);
+          _currencyController.text = ref.read(currencySymbolProvider);
           await rescheduleAll(ref.read(fixedDepositsProvider), leadDays: ref.read(notificationLeadDaysProvider));
-          if (context.mounted) _showMessage(context, 'Restored from Google Drive');
+          if (mounted) _showMessage('Restored from Google Drive');
         } catch (error) {
-          if (context.mounted) _showMessage(context, '$error');
+          if (mounted) _showMessage('$error');
         }
       case 'disconnect':
         await GoogleDriveBackupService.instance.disconnect();

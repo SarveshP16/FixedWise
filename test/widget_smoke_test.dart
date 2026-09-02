@@ -80,7 +80,7 @@ void main() {
 
     expect(find.text('New deposit'), findsOneWidget);
 
-    await tester.enterText(find.widgetWithText(TextField, 'e.g. Anchor Bank'), 'Test Bank');
+    await tester.enterText(find.widgetWithText(TextField, 'e.g. Axis Bank'), 'Test Bank');
     await tester.pump();
 
     await tester.tap(find.text('Create deposit'));

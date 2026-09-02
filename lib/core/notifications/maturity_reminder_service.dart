@@ -32,9 +32,18 @@ class MaturityReminderService {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
-  /// Sets up the notification channel, local timezone, and (Android 13+)
-  /// requests the runtime notification + exact-alarm permissions. Safe to
-  /// call more than once — later calls are a no-op.
+  /// Sets up the notification channel and local timezone every launch,
+  /// and — only when [requestPermissions] is true — also requests the
+  /// runtime notification + exact-alarm permissions. Safe to call more
+  /// than once — later calls are a no-op.
+  ///
+  /// [requestPermissions] should be true at most once ever per install:
+  /// Android's "Alarms & reminders" grant opens a full-screen Settings
+  /// page rather than an in-app dialog, so asking on every app launch
+  /// until the user grants it is a real "the app hijacks itself on open"
+  /// complaint, not just noisy. The caller (`main.dart`) tracks whether
+  /// it's already asked via `SettingsRepository.
+  /// getNotificationPermissionsRequested`.
   ///
   /// Every plugin call in this class is wrapped in try/catch: a reminder
   /// is a nice-to-have layered on top of Deposits, never something that
@@ -42,7 +51,7 @@ class MaturityReminderService {
   /// platform channel isn't there (as in widget tests, which run with no
   /// real plugin registered) or a device-specific notification quirk
   /// throws.
-  Future<void> init() async {
+  Future<void> init({bool requestPermissions = false}) async {
     if (_initialized) return;
     _initialized = true;
 
@@ -72,11 +81,13 @@ class MaturityReminderService {
           importance: Importance.high,
         ),
       );
-      await androidPlugin?.requestNotificationsPermission();
+      if (requestPermissions) {
+        await androidPlugin?.requestNotificationsPermission();
 
-      // Android 12+ needs this granted separately from the notification
-      // permission above before an exact alarm can be scheduled at all.
-      await androidPlugin?.requestExactAlarmsPermission();
+        // Android 12+ needs this granted separately from the notification
+        // permission above before an exact alarm can be scheduled at all.
+        await androidPlugin?.requestExactAlarmsPermission();
+      }
     } catch (error, stackTrace) {
       debugPrint('MaturityReminderService.init failed: $error\n$stackTrace');
     }

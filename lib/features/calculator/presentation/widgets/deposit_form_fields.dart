@@ -76,7 +76,7 @@ class _DepositFormFieldsState extends State<DepositFormFields> {
               TextField(
                 controller: _bankController,
                 style: AppTypography.inputText,
-                decoration: const InputDecoration(hintText: 'e.g. Anchor Bank'),
+                decoration: const InputDecoration(hintText: 'e.g. Axis Bank'),
                 onChanged: (value) => _emit(_draft.copyWith(bankName: value)),
               ),
               if (widget.bankSuggestions.isNotEmpty) ...[

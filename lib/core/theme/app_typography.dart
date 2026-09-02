@@ -15,13 +15,22 @@ import 'app_colors.dart';
 /// per-weight instances of Fraunces, not its true variable "opsz" optical-
 /// size axis from the mockup's `@import` — approximated here by picking a
 /// weight/size per role rather than reproducing the axis.
+///
+/// Every size below is still written as the mockup's literal CSS px value
+/// (so it stays traceable to the source), but scaled up by [_scale] before
+/// use — the mockup itself is a ~296px-wide miniature demo graphic, not a
+/// real phone's ~390-430dp logical width, so mapping its px values 1:1 to
+/// Flutter's logical pixels rendered every real device's text far smaller
+/// than intended (reported as "font looks very small" on an actual phone).
 abstract final class AppTypography {
+  static const double _scale = 1.3;
+
   static TextStyle _fraunces({
     required double size,
     FontWeight weight = FontWeight.w500,
     Color? color,
   }) => GoogleFonts.fraunces(
-    fontSize: size,
+    fontSize: size * _scale,
     fontWeight: weight,
     color: color,
     height: 1.15,
@@ -31,7 +40,7 @@ abstract final class AppTypography {
     required double size,
     FontWeight weight = FontWeight.w400,
     Color? color,
-  }) => GoogleFonts.ibmPlexSans(fontSize: size, fontWeight: weight, color: color);
+  }) => GoogleFonts.ibmPlexSans(fontSize: size * _scale, fontWeight: weight, color: color);
 
   // ---- Fraunces (serif): headings, big figures, chip initials ----
 

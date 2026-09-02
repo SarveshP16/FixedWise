@@ -14,6 +14,7 @@ class SettingsRepository {
   static const _currencySymbolKey = 'currencySymbol';
   static const _notificationLeadDaysKey = 'notificationLeadDays';
   static const _googleDriveConnectedEmailKey = 'googleDriveConnectedEmail';
+  static const _notificationPermissionsRequestedKey = 'notificationPermissionsRequested';
 
   static const defaultNotificationLeadDays = 7;
 
@@ -38,6 +39,17 @@ class SettingsRepository {
       await _box.put(_googleDriveConnectedEmailKey, value);
     }
   }
+
+  /// Whether we've already asked the OS for notification/exact-alarm
+  /// permissions once. Android's "Alarms & reminders" grant is a full-
+  /// screen Settings deep-link, not an in-app dialog — asking again on
+  /// every single app launch until the user grants it is a bad enough
+  /// experience that it's worth asking only once, ever, regardless of
+  /// the outcome (the user can still turn it on later from OS Settings).
+  bool getNotificationPermissionsRequested() => (_box.get(_notificationPermissionsRequestedKey) as bool?) ?? false;
+
+  Future<void> setNotificationPermissionsRequested(bool value) =>
+      _box.put(_notificationPermissionsRequestedKey, value);
 
   static SettingsRepository openDefault() {
     return SettingsRepository(Hive.box(HiveBoxes.settings));

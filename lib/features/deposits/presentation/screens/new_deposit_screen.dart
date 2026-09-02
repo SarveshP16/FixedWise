@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/notifications/maturity_reminder_sync.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -33,6 +34,7 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
   DraftDeposit _draft = DraftDeposit.initial();
   String? _holderId;
   bool _autoRenew = false;
+  DateTime _openedDate = DateTime.now();
   final _fdNumberController = TextEditingController();
 
   @override
@@ -77,6 +79,19 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
                       bankSuggestions: bankSuggestions,
                       currencySymbol: currencySymbol,
                       onChanged: (draft) => setState(() => _draft = draft),
+                    ),
+                    FixedwiseFieldShell(
+                      label: 'Opened date',
+                      child: FixedwiseInputBox(
+                        onTap: _pickOpenedDate,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(DateFormat('d MMM yyyy').format(_openedDate), style: AppTypography.inputText),
+                            const Icon(Icons.calendar_today_outlined, size: 16),
+                          ],
+                        ),
+                      ),
                     ),
                     if (holders.length > 1)
                       FixedwiseFieldShell(
@@ -130,6 +145,19 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
     );
   }
 
+  Future<void> _pickOpenedDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _openedDate,
+      // FDs are commonly onboarded well after they were actually opened —
+      // allow up to 20 years back — but never a future start date.
+      firstDate: DateTime(now.year - 20),
+      lastDate: now,
+    );
+    if (picked != null) setState(() => _openedDate = picked);
+  }
+
   Future<void> _create(String holderId) async {
     final now = DateTime.now();
     final deposit = FixedDeposit(
@@ -138,7 +166,7 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
       bankName: _draft.bankName.trim(),
       interestRatePercent: _draft.interestRatePercent,
       principalAmount: _draft.principalAmount,
-      openedDate: now,
+      openedDate: _openedDate,
       tenureMonths: _draft.tenureMonths,
       compounding: _draft.compounding,
       payoutType: _draft.payoutType,

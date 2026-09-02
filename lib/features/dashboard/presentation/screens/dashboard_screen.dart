@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/widgets/section_title.dart';
@@ -16,37 +17,48 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardSummaryProvider);
 
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            HeroHeader(totalValue: summary.totalAccruedValue, growthPercent: summary.overallGrowthPercent),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 20, 22, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SectionTitle('Maturity ladder'),
-                  MaturityLadderChart(deposits: summary.ladderEntries),
-                ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      // The hero header at the top of this screen is dark, unlike every
+      // other screen's light "paper" top — needs light (white) status bar
+      // icons or they merge into it. See app.dart's default for the rest
+      // of the app.
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              HeroHeader(totalValue: summary.totalAccruedValue, growthPercent: summary.overallGrowthPercent),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SectionTitle('Maturity ladder'),
+                    MaturityLadderChart(deposits: summary.ladderEntries),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 18, 22, 6),
-              child: const QuickActionsRow(),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SectionTitle('Maturing soon'),
-                  MaturingSoonList(deposits: summary.maturingSoon),
-                ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 18, 22, 6),
+                child: const QuickActionsRow(),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SectionTitle('Maturing soon'),
+                    MaturingSoonList(deposits: summary.maturingSoon),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
