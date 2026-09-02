@@ -55,10 +55,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
   Google Drive backup, About.
 - **Maturity reminders**: `flutter_local_notifications` + `timezone`,
   scheduled/rescheduled/cancelled on create, edit, close-early, and
-  lead-time changes — needed the same Android manifest additions
-  (explicit scheduled/boot `<receiver>` entries, exact-alarm permission)
-  that Pulse's Tasks reminders needed, or scheduled alarms silently never
-  fire.
+  lead-time changes.
 - **Local backup**: export/import everything (holders, deposits,
   settings) to one JSON file via `file_picker` — the safeguard against
   no-cloud-sync local storage.
@@ -69,6 +66,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
   environment can't do — see README.
 
 ### Fixed
+- **The "Alarms & reminders" toggle in OS Settings was permanently
+  disabled — not just off.** `SCHEDULE_EXACT_ALARM` was never actually
+  declared in `AndroidManifest.xml` (`flutter_local_notifications`'s own
+  manifest only auto-declares `VIBRATE`/`POST_NOTIFICATIONS`, contrary to
+  what an earlier changelog entry here implied), so Android had nothing
+  to grant — every scheduled reminder threw `PlatformException(
+  exact_alarms_not_permitted)` regardless of what the user tapped. Fixed
+  by declaring `SCHEDULE_EXACT_ALARM`/`RECEIVE_BOOT_COMPLETED` and the
+  two `ScheduledNotificationReceiver`/`ScheduledNotificationBootReceiver`
+  `<receiver>` entries explicitly. Verified end-to-end on a real device.
 - **Alarms & reminders permission no longer hijacks every app launch.**
   `MaturityReminderService.init()` was calling
   `requestExactAlarmsPermission()` unconditionally on every cold start —
