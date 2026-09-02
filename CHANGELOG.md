@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-02
+
+First real release — everything up to and including this point was
+built and verified (on a real device: Nothing Phone, Android 16) before
+tagging it as a signed 1.0.0.
+
 ### Removed
 - **Profile's "Send test notification" row.** Was added purely to debug
   the exact-alarm permission issues below — now that reminders are
@@ -14,11 +20,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
 
 ### Added
 - **About screen expanded**: a privacy note ("your data stays on this
-  device unless you connect Google Drive backup"), a "Send feedback"
-  mailto link, and a "What's new" screen with user-facing release
-  highlights (`lib/features/profile/data/whats_new.dart`) — deliberately
-  separate from this `CHANGELOG.md`, which is written for a developer
-  audience and isn't fit to show an end user directly.
+  device unless you connect Google Drive backup") and a "What's new"
+  screen with user-facing release highlights
+  (`lib/features/profile/data/whats_new.dart`) — deliberately separate
+  from this `CHANGELOG.md`, which is written for a developer audience
+  and isn't fit to show an end user directly. (A "Send feedback" mailto
+  link was tried and then removed — showing the developer's own email
+  address in-app wasn't wanted.)
 - **App lock** (PIN + optional biometric unlock), covering the whole app
   rather than one module — the entire app is financial data. Profile's
   new "Security" card sets up/changes/turns off a 6-digit PIN

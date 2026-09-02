@@ -4,7 +4,7 @@ import '../domain/whats_new_entry.dart';
 /// from `CHANGELOG.md`.
 const whatsNewEntries = [
   WhatsNewEntry(
-    version: '0.1.0',
+    version: '1.0.0',
     date: 'September 2026',
     highlights: [
       'Track every Fixed Deposit across your family in one place',

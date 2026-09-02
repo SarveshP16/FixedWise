@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -9,23 +8,8 @@ import '../../../../core/widgets/bordered_icon_button.dart';
 import '../../../../core/widgets/fixedwise_card.dart';
 import '../../application/settings_providers.dart';
 
-/// The email feedback/bug reports go to — this is the developer's own
-/// personal app; feedback from anyone using it (e.g. a family member
-/// added as a Holder) should reach the person who built it.
-const _feedbackEmail = 'crystaxitofc@gmail.com';
-
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
-
-  Future<void> _sendFeedback(BuildContext context) async {
-    final uri = Uri(scheme: 'mailto', path: _feedbackEmail, queryParameters: {'subject': 'FixedWise feedback'});
-    final launched = await launchUrl(uri);
-    if (!launched && context.mounted) {
-      ScaffoldMessenger.of(context)
-        ..removeCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('No mail app found — email $_feedbackEmail directly')));
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -77,25 +61,12 @@ class AboutScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             FixedwiseCard(
-              child: Column(
-                children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.new_releases_outlined),
-                    title: const Text("What's new"),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push('/whats-new'),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.mail_outline),
-                    title: const Text('Send feedback'),
-                    subtitle: const Text(_feedbackEmail),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _sendFeedback(context),
-                  ),
-                ],
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.new_releases_outlined),
+                title: const Text("What's new"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/whats-new'),
               ),
             ),
           ],
