@@ -6,8 +6,10 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/fixedwise_card.dart';
 
 /// The dashboard's 3 quick-action buttons (`.quick .qbtn`): New deposit,
-/// Calculator, and Statements (routes to Profile, where data export/backup
-/// lives).
+/// Calculator, and Statements — a "statement" of your FDs is the deposits
+/// list itself, not Settings, so this routes to Deposits (it used to
+/// route to Profile, which was a confusing dead end for anyone tapping it
+/// expecting to see their FDs).
 class QuickActionsRow extends StatelessWidget {
   const QuickActionsRow({super.key});
 
@@ -35,7 +37,7 @@ class QuickActionsRow extends StatelessWidget {
           child: _QuickAction(
             icon: Icons.receipt_long_outlined,
             label: 'Statements',
-            onTap: () => context.go('/profile'),
+            onTap: () => context.go('/deposits'),
           ),
         ),
       ],

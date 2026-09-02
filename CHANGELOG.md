@@ -6,6 +6,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
 ## [Unreleased]
 
 ### Added
+- **"Send test notification" in Profile** — schedules a one-off reminder
+  10 seconds out through the exact same `zonedSchedule` + exact-alarm
+  path a real FD maturity reminder uses, so you can verify reminders
+  actually work on your device without waiting months for a real one to
+  mature (`MaturityReminderService.sendTestReminder`).
 - **Initial MVP build.** Flutter app scaffolded (`com.fixedwise.app`,
   Android + iOS), themed to match the supplied "Ladder" mockup exactly —
   Fraunces + IBM Plex Sans, warm paper/ink/brass/sage palette, all tokens
@@ -95,6 +100,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
   rarely adding one the same day it's opened) always got today's date.
   Added an "Opened date" field (`showDatePicker`, up to 20 years back,
   never in the future).
+- **Dashboard's "Statements" quick action was routing to Profile** — a
+  confusing dead end for anyone tapping it expecting to see their FDs.
+  Now opens the Deposits list, which is what a "statement" actually is.
 
 ### Known gaps
 - No app icon yet (`flutter_launcher_icons` wired, waiting on source art).

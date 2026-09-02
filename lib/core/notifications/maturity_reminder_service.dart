@@ -132,6 +132,42 @@ class MaturityReminderService {
     }
   }
 
+  /// Notification id reserved for [sendTestReminder] — outside the range
+  /// `depositId.hashCode & 0x7fffffff` could ever collide with by
+  /// construction (that mask always produces a non-negative int; this is
+  /// negative), so a test reminder can never clash with, or get silently
+  /// replaced by, a real FD's.
+  static const _testNotificationId = -1;
+
+  /// Schedules a one-off test reminder [delay] from now, through the
+  /// exact same `zonedSchedule` + exact-alarm path a real maturity
+  /// reminder uses — unlike firing a notification immediately via
+  /// `.show()`, this actually exercises the fragile part (whether the OS
+  /// will wake the app to deliver a *scheduled* alarm), which is what you
+  /// want to verify on a real device rather than trusting it'll work in
+  /// months when a real FD matures. See Profile's "Send test
+  /// notification" action.
+  Future<void> sendTestReminder({Duration delay = const Duration(seconds: 10)}) async {
+    final fireDate = DateTime.now().add(delay);
+    await _plugin.zonedSchedule(
+      id: _testNotificationId,
+      title: 'FixedWise test reminder',
+      body: 'If you see this, maturity reminders will work.',
+      scheduledDate: tz.TZDateTime.from(fireDate, tz.local),
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
+
   Future<void> cancelReminder(String depositId) async {
     try {
       await _plugin.cancel(id: _notificationIdFor(depositId));

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/backup/backup_models.dart';
 import '../../../../core/backup/google_drive_backup_service.dart';
 import '../../../../core/backup/local_backup_service.dart';
+import '../../../../core/notifications/maturity_reminder_service.dart';
 import '../../../../core/notifications/maturity_reminder_sync.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
@@ -114,6 +115,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                     ),
                   ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.notifications_active_outlined),
+                    title: const Text('Send test notification'),
+                    subtitle: const Text('Fires in 10 seconds, the same way a real reminder does'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _sendTestNotification,
+                  ),
                 ],
               ),
             ),
@@ -179,6 +188,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _changeLeadDays(int days) async {
     await ref.read(notificationLeadDaysProvider.notifier).setLeadDays(days);
     await rescheduleAll(ref.read(fixedDepositsProvider), leadDays: days);
+  }
+
+  Future<void> _sendTestNotification() async {
+    try {
+      await MaturityReminderService.instance.sendTestReminder();
+      if (mounted) _showMessage('Test notification scheduled — watch for it in ~10 seconds');
+    } catch (error) {
+      if (mounted) _showMessage("Couldn't schedule it: $error");
+    }
   }
 
   Future<void> _exportToFile() async {
