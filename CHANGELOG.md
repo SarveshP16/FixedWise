@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
 
 ## [Unreleased]
 
+### Removed
+- **Profile's "Send test notification" row.** Was added purely to debug
+  the exact-alarm permission issues below — now that reminders are
+  confirmed working end-to-end on a real device, it's no longer needed.
+  The "Reminders need one more permission" row stays, since that's still
+  a real, ongoing recovery path.
+
 ### Added
 - **Google Drive auto-backup**, with an Off/Weekly/Monthly picker in
   Profile once connected. Checked once at every app launch (not a true
