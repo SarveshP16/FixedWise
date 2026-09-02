@@ -22,9 +22,6 @@ raw color or text style should ever be hardcoded outside that folder.
 
 ## Known setup gaps
 
-- **App icon**: not yet supplied. `flutter_launcher_icons` is wired up in
-  `pubspec.yaml` pointing at `assets/icon/app_icon.png` — add a 1024px
-  source image there and run `dart run flutter_launcher_icons`.
 - **Google Drive backup**: needs a one-time Google Cloud OAuth client
   (Android SHA-1 fingerprint, iOS URL scheme + client id) that this repo
   doesn't have configured. The code (`lib/core/backup/

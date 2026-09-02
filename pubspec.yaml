@@ -65,15 +65,31 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
 
 # Config for `dart run flutter_launcher_icons` — regenerates every mipmap
-# density under android/app/src/main/res/ (and the iOS AppIcon set) from
-# one source image. No source image has been supplied yet — this is
-# wired up ready to go the moment `assets/icon/app_icon.png` exists;
-# running the command before then will just fail with a clear "file not
-# found" rather than silently doing nothing.
+# density under android/app/src/main/res/ (both the legacy square icon
+# and the adaptive foreground/background layers) and the iOS AppIcon set,
+# from the source images in assets/icon/. Those came from a full icon
+# export package (see assets/icon/README in that Downloads folder, not
+# copied into the repo) that also included a hand-written
+# android/adaptive/ic_launcher.xml using a flat #101a2e background color
+# rather than a background image — adaptive_icon_background below matches
+# that exactly rather than pointing at a second bitmap layer.
 flutter_launcher_icons:
   android: true
   ios: true
+  remove_alpha_ios: true
   image_path: "assets/icon/app_icon.png"
+  # Android's pre-8.0 fallback icon needs the rounded-square shape baked
+  # in (what launchers on those versions expect); the flat, unrounded
+  # `image_path` above is right for iOS (which applies its own squircle
+  # mask) but would look wrong as Android's legacy icon.
+  image_path_android: "assets/icon/app_icon_android_legacy.png"
+  adaptive_icon_background: "#101a2e"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  # The supplied foreground is already inset to Android's adaptive-icon
+  # safe zone (per the export's own README) — flutter_launcher_icons
+  # defaults to an extra 16% inset on top of whatever it's given, which
+  # would shrink an already-safe-zoned mark twice over.
+  adaptive_icon_foreground_inset: 0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -86,10 +102,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/icon/
+    - assets/branding/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

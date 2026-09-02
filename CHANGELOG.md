@@ -6,6 +6,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
 ## [Unreleased]
 
 ### Added
+- **Real app icon** (a coin mark with the ₹ symbol and a brass growth-
+  ladder line, on the app's ink-navy background) — replaces the default
+  Flutter icon. Sourced from a full export package (adaptive foreground/
+  background for Android 8+, a pre-rounded legacy fallback for older
+  Android, and the full iOS AppIcon set), regenerated via
+  `flutter_launcher_icons` from `assets/icon/`. Two adjustments from the
+  package's defaults were needed: `adaptive_icon_foreground_inset: 0`
+  (the supplied foreground was already inset to the safe zone; the
+  tool's own default 16% inset would have shrunk it twice), and a
+  separate `image_path_android` pointing at the pre-rounded legacy asset
+  (the flat, unrounded iOS master would have looked wrong as Android's
+  pre-8.0 fallback icon, which needs the rounding baked in).
 - **A visible "Reminders need one more permission" prompt in Profile**
   when exact alarms aren't granted — since we now only auto-request that
   permission once ever (see Fixed, below), declining or missing it left
@@ -121,7 +133,6 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
   Now opens the Deposits list, which is what a "statement" actually is.
 
 ### Known gaps
-- No app icon yet (`flutter_launcher_icons` wired, waiting on source art).
 - iOS is coded for but unverified — no Mac in this dev environment.
 - Real bank "certificate" generation (PDF) not built — text-summary
   share is the MVP stand-in.
