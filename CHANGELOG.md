@@ -13,6 +13,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
   a real, ongoing recovery path.
 
 ### Added
+- **About screen expanded**: a privacy note ("your data stays on this
+  device unless you connect Google Drive backup"), a "Send feedback"
+  mailto link, and a "What's new" screen with user-facing release
+  highlights (`lib/features/profile/data/whats_new.dart`) — deliberately
+  separate from this `CHANGELOG.md`, which is written for a developer
+  audience and isn't fit to show an end user directly.
 - **App lock** (PIN + optional biometric unlock), covering the whole app
   rather than one module — the entire app is financial data. Profile's
   new "Security" card sets up/changes/turns off a 6-digit PIN

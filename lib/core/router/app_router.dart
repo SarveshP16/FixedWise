@@ -10,6 +10,7 @@ import '../../features/deposits/presentation/screens/new_deposit_screen.dart';
 import '../../features/holders/presentation/screens/holders_screen.dart';
 import '../../features/profile/presentation/screens/about_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/whats_new_screen.dart';
 import 'app_shell.dart';
 
 /// App-wide route table. A [StatefulShellRoute] gives each bottom-nav tab
@@ -55,6 +56,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/holders', builder: (context, state) => const HoldersScreen()),
       GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),
+      GoRoute(path: '/whats-new', builder: (context, state) => const WhatsNewScreen()),
     ],
   );
 });
