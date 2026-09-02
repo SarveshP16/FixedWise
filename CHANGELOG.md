@@ -6,6 +6,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
 ## [Unreleased]
 
 ### Added
+- **A visible "Reminders need one more permission" prompt in Profile**
+  when exact alarms aren't granted — since we now only auto-request that
+  permission once ever (see Fixed, below), declining or missing it left
+  reminders permanently and silently broken with no way back in but
+  hunting through OS Settings by hand. Tapping it (or "Send test
+  notification" while it's missing) re-opens the grant screen on demand;
+  status re-checks automatically when the app resumes
+  (`MaturityReminderService.canScheduleExactAlarms`/
+  `requestExactAlarmPermissionNow`).
 - **"Send test notification" in Profile** — schedules a one-off reminder
   10 seconds out through the exact same `zonedSchedule` + exact-alarm
   path a real FD maturity reminder uses, so you can verify reminders

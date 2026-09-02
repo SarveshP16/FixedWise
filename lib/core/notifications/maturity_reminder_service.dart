@@ -71,9 +71,7 @@ class MaturityReminderService {
         settings: const InitializationSettings(android: androidInit, iOS: iosInit),
       );
 
-      final androidPlugin = _plugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      await androidPlugin?.createNotificationChannel(
+      await _androidPlugin?.createNotificationChannel(
         const AndroidNotificationChannel(
           _channelId,
           _channelName,
@@ -82,14 +80,45 @@ class MaturityReminderService {
         ),
       );
       if (requestPermissions) {
-        await androidPlugin?.requestNotificationsPermission();
+        await _androidPlugin?.requestNotificationsPermission();
 
         // Android 12+ needs this granted separately from the notification
         // permission above before an exact alarm can be scheduled at all.
-        await androidPlugin?.requestExactAlarmsPermission();
+        await _androidPlugin?.requestExactAlarmsPermission();
       }
     } catch (error, stackTrace) {
       debugPrint('MaturityReminderService.init failed: $error\n$stackTrace');
+    }
+  }
+
+  AndroidFlutterLocalNotificationsPlugin? get _androidPlugin =>
+      _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+  /// Whether this app can currently schedule exact alarms — Android's
+  /// "Alarms & reminders" special access, without which every
+  /// `zonedSchedule` call throws `PlatformException(
+  /// exact_alarms_not_permitted)`. `true` on platforms/OS versions where
+  /// this isn't even a concept (iOS, pre-Android-12) rather than treating
+  /// "not applicable" as "not granted".
+  Future<bool> canScheduleExactAlarms() async {
+    try {
+      return await _androidPlugin?.canScheduleExactNotifications() ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Opens the OS's exact-alarm grant screen on demand — unlike [init]'s
+  /// automatic, once-ever request, this is meant to be wired to a button
+  /// the user explicitly taps (Profile's "Send test notification"/reminder
+  /// settings), so it's fine to call every time regardless of whether
+  /// permission was asked for before, and even if it's already granted
+  /// (a no-op in that case).
+  Future<void> requestExactAlarmPermissionNow() async {
+    try {
+      await _androidPlugin?.requestExactAlarmsPermission();
+    } catch (error, stackTrace) {
+      debugPrint('MaturityReminderService.requestExactAlarmPermissionNow failed: $error\n$stackTrace');
     }
   }
 

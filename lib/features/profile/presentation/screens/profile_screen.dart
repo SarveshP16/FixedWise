@@ -8,6 +8,7 @@ import '../../../../core/backup/google_drive_backup_service.dart';
 import '../../../../core/backup/local_backup_service.dart';
 import '../../../../core/notifications/maturity_reminder_service.dart';
 import '../../../../core/notifications/maturity_reminder_sync.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/fixedwise_card.dart';
@@ -37,22 +38,41 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindingObserver {
   late final TextEditingController _nameController;
   late final TextEditingController _currencyController;
+
+  /// `null` while the first check is still in flight. Re-checked whenever
+  /// the app resumes, since granting it happens on the OS Settings screen
+  /// — outside this widget entirely — and there's no other signal that
+  /// tells us it changed.
+  bool? _exactAlarmsGranted;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _nameController = TextEditingController(text: ref.read(displayNameProvider));
     _currencyController = TextEditingController(text: ref.read(currencySymbolProvider));
+    _refreshExactAlarmStatus();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
     _currencyController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshExactAlarmStatus();
+  }
+
+  Future<void> _refreshExactAlarmStatus() async {
+    final granted = await MaturityReminderService.instance.canScheduleExactAlarms();
+    if (mounted) setState(() => _exactAlarmsGranted = granted);
   }
 
   @override
@@ -115,6 +135,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                     ),
                   ),
+                  if (_exactAlarmsGranted == false)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.warning_amber_rounded, color: AppColors.brassDeep),
+                      title: const Text('Reminders need one more permission'),
+                      subtitle: const Text("Tap to allow \"Alarms & reminders\" — otherwise they won't fire"),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: _requestExactAlarmPermission,
+                    ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.notifications_active_outlined),
@@ -190,12 +219,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await rescheduleAll(ref.read(fixedDepositsProvider), leadDays: days);
   }
 
+  Future<void> _requestExactAlarmPermission() async {
+    await MaturityReminderService.instance.requestExactAlarmPermissionNow();
+    // The OS Settings screen this opens is a separate Activity, so by the
+    // time control returns here the user has already backed out of it —
+    // safe to re-check immediately rather than waiting for
+    // didChangeAppLifecycleState's resume signal.
+    await _refreshExactAlarmStatus();
+  }
+
   Future<void> _sendTestNotification() async {
     try {
       await MaturityReminderService.instance.sendTestReminder();
       if (mounted) _showMessage('Test notification scheduled — watch for it in ~10 seconds');
     } catch (error) {
-      if (mounted) _showMessage("Couldn't schedule it: $error");
+      await _refreshExactAlarmStatus();
+      if (!mounted) return;
+      if ('$error'.contains('exact_alarms_not_permitted')) {
+        _showMessage('Grant "Alarms & reminders" above first, then try again');
+      } else {
+        _showMessage("Couldn't schedule it: $error");
+      }
     }
   }
 
