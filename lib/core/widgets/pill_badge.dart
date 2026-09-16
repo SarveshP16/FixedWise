@@ -14,7 +14,7 @@ class PillBadge extends StatelessWidget {
 
   /// The mockup's "on dark" variant used inside the hero header — a more
   /// translucent sage fill with lighter text than the default.
-  const PillBadge.onDark({super.key, required this.label})
+  PillBadge.onDark({super.key, required this.label})
     : background = AppColors.deltaPillBackground,
       textColor = AppColors.deltaPillText;
 

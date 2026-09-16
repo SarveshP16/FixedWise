@@ -24,9 +24,9 @@ class HeroHeader extends ConsumerWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 22),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.ink,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: SafeArea(
         bottom: false,

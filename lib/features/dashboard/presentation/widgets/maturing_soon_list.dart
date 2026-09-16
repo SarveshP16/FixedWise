@@ -46,7 +46,7 @@ class _MiniRow extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          border: showDivider ? const Border(bottom: BorderSide(color: AppColors.line)) : null,
+          border: showDivider ? Border(bottom: BorderSide(color: AppColors.line)) : null,
         ),
         child: Row(
           children: [

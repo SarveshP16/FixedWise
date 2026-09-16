@@ -2,6 +2,7 @@ import 'package:hive/hive.dart';
 
 import '../../../core/backup/auto_backup_frequency.dart';
 import '../../../core/storage/hive_boxes.dart';
+import '../../../core/theme/theme_preference.dart';
 
 /// Reads/writes simple app-wide preferences — a plain key-value Hive box,
 /// not per-record like the holders/deposits boxes, since there's only a
@@ -19,6 +20,7 @@ class SettingsRepository {
   static const _autoBackupFrequencyKey = 'autoBackupFrequency';
   static const _lastGoogleDriveBackupAtKey = 'lastGoogleDriveBackupAt';
   static const _biometricUnlockEnabledKey = 'biometricUnlockEnabled';
+  static const _themePreferenceKey = 'themePreference';
 
   static const defaultNotificationLeadDays = 7;
 
@@ -76,6 +78,11 @@ class SettingsRepository {
   bool getBiometricUnlockEnabled() => (_box.get(_biometricUnlockEnabledKey) as bool?) ?? false;
 
   Future<void> setBiometricUnlockEnabled(bool value) => _box.put(_biometricUnlockEnabledKey, value);
+
+  ThemePreference getThemePreference() =>
+      ThemePreference.fromStorageKey((_box.get(_themePreferenceKey) as String?) ?? ThemePreference.system.storageKey);
+
+  Future<void> setThemePreference(ThemePreference value) => _box.put(_themePreferenceKey, value.storageKey);
 
   static SettingsRepository openDefault() {
     return SettingsRepository(Hive.box(HiveBoxes.settings));

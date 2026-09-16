@@ -9,7 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 /// filled area under a stroked curve, a dashed "today" line, and a marker
 /// dot at the deposit's value-so-far.
 class GrowthCurvePainter extends CustomPainter {
-  GrowthCurvePainter({required this.points, required this.progressFraction});
+  GrowthCurvePainter({required this.points, required this.progressFraction}) : brightness = AppColors.brightness;
 
   /// Sampled points from `MaturityCalculator.growthCurvePoints`, oldest
   /// (opened) to newest (maturity).
@@ -18,6 +18,12 @@ class GrowthCurvePainter extends CustomPainter {
   /// 0.0–1.0; the dashed "today" line and marker are only drawn strictly
   /// inside the term (not yet opened / already matured hide them).
   final double progressFraction;
+
+  /// Captured at construction so [shouldRepaint] can tell a theme toggle
+  /// apart from a no-op rebuild — every color this paints with comes from
+  /// [AppColors], which [shouldRepaint] can't otherwise see since they
+  /// aren't stored as fields here.
+  final Brightness brightness;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -100,6 +106,8 @@ class GrowthCurvePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant GrowthCurvePainter oldDelegate) {
-    return oldDelegate.points != points || oldDelegate.progressFraction != progressFraction;
+    return oldDelegate.points != points ||
+        oldDelegate.progressFraction != progressFraction ||
+        oldDelegate.brightness != brightness;
   }
 }

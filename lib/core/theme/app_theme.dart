@@ -3,46 +3,51 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
 
-/// FixedWise's single theme. The mockup is light-only — no dark palette
-/// was designed for it — so this deliberately builds only a light
-/// [ThemeData] for MVP; a dark mode is an explicit later decision, not an
-/// oversight.
+/// FixedWise's two themes, built from [AppPalette.light]/[AppPalette.dark]
+/// directly rather than the dynamic [AppColors] getters — a `ThemeData`
+/// needs to be unconditionally light or unconditionally dark, not "whatever
+/// [AppColors.brightness] currently is".
 abstract final class AppTheme {
-  static ThemeData light() {
-    const colorScheme = ColorScheme.light(
-      primary: AppColors.brass,
-      onPrimary: AppColors.ctaText,
-      secondary: AppColors.sage,
+  static ThemeData light() => _build(AppPalette.light, Brightness.light);
+
+  static ThemeData dark() => _build(AppPalette.dark, Brightness.dark);
+
+  static ThemeData _build(AppPalette p, Brightness brightness) {
+    final colorScheme = ColorScheme(
+      brightness: brightness,
+      primary: p.brass,
+      onPrimary: p.ctaText,
+      secondary: p.sage,
       onSecondary: Colors.white,
-      surface: AppColors.card,
-      onSurface: AppColors.text,
-      outline: AppColors.line,
-      error: AppColors.error,
+      surface: p.card,
+      onSurface: p.text,
+      outline: p.line,
+      error: p.error,
       onError: Colors.white,
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.paper,
+      scaffoldBackgroundColor: p.paper,
       fontFamily: AppTypography.inputText.fontFamily,
 
-      cardTheme: const CardThemeData(
-        color: AppColors.card,
+      cardTheme: CardThemeData(
+        color: p.card,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
-          side: BorderSide(color: AppColors.line),
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
+          side: BorderSide(color: p.line),
         ),
       ),
 
-      dividerTheme: const DividerThemeData(color: AppColors.line, thickness: 1, space: 1),
+      dividerTheme: DividerThemeData(color: p.line, thickness: 1, space: 1),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.ink,
-          foregroundColor: AppColors.heroOnDark,
+          backgroundColor: p.ink,
+          foregroundColor: p.heroOnDark,
           textStyle: AppTypography.buttonLabel,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
@@ -52,60 +57,73 @@ abstract final class AppTheme {
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.ink,
+          // Text/icon on an outline sitting on `paper`/`card`, not on an
+          // `ink` panel — needs `text`'s per-theme contrast, not `ink`'s
+          // fixed accent-surface tone.
+          foregroundColor: p.text,
           textStyle: AppTypography.buttonLabel,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          side: const BorderSide(color: AppColors.line),
+          side: BorderSide(color: p.line),
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
         ),
       ),
 
-      iconTheme: const IconThemeData(color: AppColors.ink, size: 18),
+      iconTheme: IconThemeData(color: p.text, size: 18),
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.card,
+        fillColor: p.card,
         contentPadding: const EdgeInsets.symmetric(vertical: 11, horizontal: 13),
         border: OutlineInputBorder(
           borderRadius: const BorderRadius.all(Radius.circular(12)),
-          borderSide: const BorderSide(color: AppColors.line),
+          borderSide: BorderSide(color: p.line),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: const BorderRadius.all(Radius.circular(12)),
-          borderSide: const BorderSide(color: AppColors.line),
+          borderSide: BorderSide(color: p.line),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: const BorderRadius.all(Radius.circular(12)),
-          borderSide: const BorderSide(color: AppColors.brass, width: 1.5),
+          borderSide: BorderSide(color: p.brass, width: 1.5),
         ),
-        hintStyle: AppTypography.inputText.copyWith(color: AppColors.textSoft),
+        hintStyle: AppTypography.inputText.copyWith(color: p.textSoft),
       ),
 
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.card,
+        backgroundColor: p.card,
         indicatorColor: Colors.transparent,
         elevation: 0,
         height: 64,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return IconThemeData(color: selected ? AppColors.ink : AppColors.textSoft, size: 20);
+          return IconThemeData(color: selected ? p.text : p.textSoft, size: 20);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return AppTypography.navLabel.copyWith(color: selected ? AppColors.ink : AppColors.textSoft);
+          return AppTypography.navLabel.copyWith(color: selected ? p.text : p.textSoft);
         }),
       ),
 
+      // Explicit .copyWith(color: p.x) below rather than trusting each
+      // AppTypography style's own baked-in color: those read the *dynamic*
+      // AppColors getters, which resolve whatever AppColors.brightness
+      // happens to be at the moment this ThemeData is built — not
+      // necessarily `brightness`. Widgets that call AppTypography.x
+      // directly (the vast majority) are unaffected — they build after
+      // MaterialApp.builder has already synced AppColors.brightness to
+      // match the theme actually in effect — but anything that falls back
+      // to Theme.of(context).textTheme (e.g. an unstyled ListTile Text)
+      // would otherwise risk baking in the wrong theme's colors.
       textTheme: TextTheme(
-        displayLarge: AppTypography.displayTotal,
-        headlineMedium: AppTypography.bigFigure,
-        titleLarge: AppTypography.screenTitle,
-        titleMedium: AppTypography.bankName,
-        bodyLarge: AppTypography.inputText,
-        bodyMedium: AppTypography.dateLine,
+        displayLarge: AppTypography.displayTotal.copyWith(color: p.heroOnDark),
+        headlineMedium: AppTypography.bigFigure.copyWith(color: p.text),
+        titleLarge: AppTypography.screenTitle.copyWith(color: p.text),
+        titleMedium: AppTypography.bankName.copyWith(color: p.text),
+        bodyLarge: AppTypography.inputText.copyWith(color: p.text),
+        bodyMedium: AppTypography.dateLine.copyWith(color: p.textSoft),
         labelLarge: AppTypography.buttonLabel,
-        labelMedium: AppTypography.fieldLabel,
+        labelMedium: AppTypography.fieldLabel.copyWith(color: p.textSoft),
       ),
     );
   }

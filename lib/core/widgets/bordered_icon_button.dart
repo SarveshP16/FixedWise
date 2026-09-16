@@ -26,7 +26,7 @@ class BorderedIconButton extends StatelessWidget {
             border: Border.all(color: AppColors.line),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 16, color: AppColors.ink),
+          child: Icon(icon, size: 16, color: AppColors.text),
         ),
       ),
     );

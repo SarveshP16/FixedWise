@@ -47,7 +47,7 @@ class AboutScreen extends ConsumerWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.lock_outline, size: 18, color: AppColors.sage),
+                  Icon(Icons.lock_outline, size: 18, color: AppColors.sage),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(

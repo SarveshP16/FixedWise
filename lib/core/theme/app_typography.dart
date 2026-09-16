@@ -88,7 +88,7 @@ abstract final class AppTypography {
 
   /// Maturity-ladder bar's amount label above each bar (`.ladder .bar .amt`,
   /// 9.5px medium).
-  static TextStyle get ladderAmount => _plexSans(size: 9.5, weight: FontWeight.w500, color: AppColors.ink);
+  static TextStyle get ladderAmount => _plexSans(size: 9.5, weight: FontWeight.w500, color: AppColors.text);
 
   /// Maturity-ladder month/year label under each bar (`.ladder-labels div`,
   /// 9.5px, muted).

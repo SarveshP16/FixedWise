@@ -17,7 +17,12 @@ class MaturityLadderChart extends ConsumerWidget {
 
   final List<FixedDeposit> deposits;
 
-  static const _barColors = [AppColors.ladderStep1, AppColors.ladderStep2, AppColors.ladderStep3, AppColors.ladderStep4];
+  static List<Color> get _barColors => [
+    AppColors.ladderStep1,
+    AppColors.ladderStep2,
+    AppColors.ladderStep3,
+    AppColors.ladderStep4,
+  ];
 
   /// Total height reserved for the bar area, including headroom above the
   /// tallest possible bar for its amount label.
@@ -107,7 +112,7 @@ class _Bar extends StatelessWidget {
           bottom: labelOnDark ? height - 16 : height + 2,
           child: Text(
             amountLabel,
-            style: AppTypography.ladderAmount.copyWith(color: labelOnDark ? AppColors.heroOnDark : AppColors.ink),
+            style: AppTypography.ladderAmount.copyWith(color: labelOnDark ? AppColors.heroOnDark : AppColors.text),
             softWrap: false,
           ),
         ),

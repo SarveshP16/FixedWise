@@ -74,8 +74,8 @@ class SecuritySection extends ConsumerWidget {
             const Divider(height: 1),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.lock_open_outlined, color: AppColors.error),
-              title: const Text('Turn off app lock', style: TextStyle(color: AppColors.error)),
+              leading: Icon(Icons.lock_open_outlined, color: AppColors.error),
+              title: Text('Turn off app lock', style: TextStyle(color: AppColors.error)),
               onTap: () => _turnOff(context, ref),
             ),
           ],

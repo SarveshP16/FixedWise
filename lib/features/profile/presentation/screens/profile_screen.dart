@@ -11,6 +11,7 @@ import '../../../../core/notifications/maturity_reminder_service.dart';
 import '../../../../core/notifications/maturity_reminder_sync.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/theme_preference.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/fixedwise_card.dart';
 import '../../../../core/widgets/fixedwise_field_shell.dart';
@@ -161,6 +162,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
                 subtitle: const Text('Manage who FDs are tagged to'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/holders'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            FixedwiseCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Appearance', style: AppTypography.sectionTitle),
+                  const SizedBox(height: 8),
+                  FixedwiseFieldShell(
+                    label: 'Theme',
+                    child: FixedwiseSegmentedControl<ThemePreference>(
+                      options: ThemePreference.values,
+                      labelBuilder: (value) => value.label,
+                      value: ref.watch(themePreferenceProvider),
+                      onChanged: (value) => ref.read(themePreferenceProvider.notifier).setPreference(value),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),

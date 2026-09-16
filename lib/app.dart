@@ -5,19 +5,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/router/app_router.dart';
 import 'core/security/app_lock_controller.dart';
 import 'core/security/app_lock_gate.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'features/profile/application/settings_providers.dart';
 
-/// App-wide default status bar style: dark icons, since every screen
-/// except the Dashboard has a light "paper" background right at the top.
+/// App-wide default status bar style for a given resolved [brightness]:
+/// dark icons on light, light icons on dark, since every screen except the
+/// Dashboard has a "paper"-background app bar right at the top.
 /// `DashboardScreen` nests its own `AnnotatedRegion` with
-/// [SystemUiOverlayStyle.light] around its dark hero, which overrides
-/// this default while it's the active screen and reverts automatically
-/// once it isn't.
-const _defaultSystemOverlayStyle = SystemUiOverlayStyle(
-  statusBarColor: Colors.transparent,
-  statusBarIconBrightness: Brightness.dark,
-  statusBarBrightness: Brightness.light,
-);
+/// [SystemUiOverlayStyle.light] around its dark hero, which overrides this
+/// default while it's the active screen and reverts automatically once it
+/// isn't.
+SystemUiOverlayStyle _defaultSystemOverlayStyle(Brightness brightness) {
+  final iconBrightness = brightness == Brightness.dark ? Brightness.light : Brightness.dark;
+  return SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: iconBrightness,
+    statusBarBrightness: brightness,
+  );
+}
 
 class FixedWiseApp extends ConsumerStatefulWidget {
   const FixedWiseApp({super.key});
@@ -54,23 +60,32 @@ class _FixedWiseAppState extends ConsumerState<FixedWiseApp> with WidgetsBinding
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
     final isLocked = ref.watch(appLockProvider).isLocked;
+    final themeMode = ref.watch(themePreferenceProvider).themeMode;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: _defaultSystemOverlayStyle,
-      child: MaterialApp.router(
-        title: 'FixedWise',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        routerConfig: router,
-        // The lock gate is layered *over* the routed content, not swapped
-        // in for it — replacing `child` outright while locked would
-        // unmount go_router's own Navigator, silently resetting every
-        // unlock back to the dashboard instead of wherever you actually
-        // were.
-        builder: (context, child) {
-          return Stack(children: [?child, if (isLocked) const AppLockGate()]);
-        },
-      ),
+    return MaterialApp.router(
+      title: 'FixedWise',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
+      routerConfig: router,
+      // The lock gate is layered *over* the routed content, not swapped
+      // in for it — replacing `child` outright while locked would
+      // unmount go_router's own Navigator, silently resetting every
+      // unlock back to the dashboard instead of wherever you actually
+      // were.
+      builder: (context, child) {
+        // Keeps AppColors' dynamic getters in sync with whichever of
+        // theme/darkTheme Flutter actually resolved for this frame, before
+        // any descendant (routed screens, the lock gate) builds and reads
+        // one of them.
+        final brightness = Theme.of(context).brightness;
+        AppColors.brightness = brightness;
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: _defaultSystemOverlayStyle(brightness),
+          child: Stack(children: [?child, if (isLocked) const AppLockGate()]),
+        );
+      },
     );
   }
 }

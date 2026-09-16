@@ -65,8 +65,8 @@ class _EntrySection extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(top: 2, right: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, right: 8),
                   child: Icon(Icons.circle, size: 5, color: AppColors.brass),
                 ),
                 Expanded(child: Text(highlight, style: AppTypography.dateLine)),

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../core/backup/auto_backup_frequency.dart';
+import '../../../core/theme/theme_preference.dart';
 import '../../../core/utils/currency_formatter.dart' show settingsRepositoryProvider;
 import '../data/settings_repository.dart';
 
@@ -90,6 +91,22 @@ class LastGoogleDriveBackupAtNotifier extends StateNotifier<DateTime?> {
     final now = DateTime.now();
     state = now;
     await _repository.setLastGoogleDriveBackupAt(now);
+  }
+}
+
+/// The user's chosen appearance (system/light/dark) — see [ThemePreference].
+final themePreferenceProvider = StateNotifierProvider<ThemePreferenceNotifier, ThemePreference>((ref) {
+  return ThemePreferenceNotifier(ref.watch(settingsRepositoryProvider));
+});
+
+class ThemePreferenceNotifier extends StateNotifier<ThemePreference> {
+  ThemePreferenceNotifier(this._repository) : super(_repository.getThemePreference());
+
+  final SettingsRepository _repository;
+
+  Future<void> setPreference(ThemePreference preference) async {
+    state = preference;
+    await _repository.setThemePreference(preference);
   }
 }
 

@@ -28,13 +28,13 @@ class InfoTable extends ConsumerWidget {
     ];
 
     return Container(
-      decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.line))),
+      decoration: BoxDecoration(border: Border(top: BorderSide(color: AppColors.line))),
       child: Column(
         children: [
           for (final row in rows)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 9),
-              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.line))),
+              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.line))),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
