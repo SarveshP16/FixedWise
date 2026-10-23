@@ -87,7 +87,6 @@ and know how much interest each person earns per financial year — with TDS and
 | --- | --- |
 | [**GitHub Releases**](https://github.com/SarveshP16/FixedWise/releases/latest) | Signed APK for all Android phones (7.0 and up). Each release lists the file's SHA-256 so you can verify it. |
 | **F-Droid** | Submission in progress. |
-| [**Obtainium**](https://github.com/ImranR98/Obtainium) | Add `https://github.com/SarveshP16/FixedWise` to get updates straight from GitHub Releases. |
 
 > **Heads-up:** F-Droid signs apps with its own key. Once FixedWise is on F-Droid you can't update a GitHub-installed copy from F-Droid (or vice versa) without reinstalling — export a backup first.
 
