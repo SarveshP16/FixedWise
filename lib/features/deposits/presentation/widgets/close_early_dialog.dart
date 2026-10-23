@@ -103,6 +103,7 @@ class _CloseEarlyDialogState extends State<_CloseEarlyDialog> {
                 setState(() => _amountController.text = _estimate(double.tryParse(value) ?? 0).round().toString());
               },
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: _amountController,
               keyboardType: TextInputType.number,

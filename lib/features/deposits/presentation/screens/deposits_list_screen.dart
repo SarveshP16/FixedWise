@@ -190,6 +190,7 @@ class _DepositsListScreenState extends ConsumerState<DepositsListScreen> {
     final current = ref.read(depositSortProvider);
     final chosen = await showModalBottomSheet<DepositSort>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

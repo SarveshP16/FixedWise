@@ -34,6 +34,8 @@ class FixedWiseApp extends ConsumerStatefulWidget {
 }
 
 class _FixedWiseAppState extends ConsumerState<FixedWiseApp> with WidgetsBindingObserver {
+  Brightness? _lastBrightness;
+
   @override
   void initState() {
     super.initState();
@@ -85,11 +87,37 @@ class _FixedWiseAppState extends ConsumerState<FixedWiseApp> with WidgetsBinding
         // one of them.
         final brightness = Theme.of(context).brightness;
         AppColors.brightness = brightness;
+        // Screens read colors through AppColors' static getters, not
+        // Theme.of, so nothing marks them dirty when the theme flips —
+        // and StatefulShellRoute keeps every tab alive offstage, so a tab
+        // built before the switch kept its old-theme colors (dark text on
+        // a dark background) until the app restarted. Rebuild the whole
+        // tree once after any brightness change.
+        if (_lastBrightness != null && _lastBrightness != brightness) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) _markSubtreeNeedsBuild(context as Element);
+          });
+        }
+        _lastBrightness = brightness;
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: _defaultSystemOverlayStyle(brightness),
-          child: Stack(children: [?child, if (isLocked) const AppLockGate()]),
+          child: Stack(
+            children: [
+              if (child != null) ExcludeSemantics(excluding: isLocked, child: child),
+              if (isLocked) const AppLockGate(),
+            ],
+          ),
         );
       },
     );
   }
+}
+
+void _markSubtreeNeedsBuild(Element root) {
+  void mark(Element element) {
+    element.markNeedsBuild();
+    element.visitChildren(mark);
+  }
+
+  root.visitChildren(mark);
 }

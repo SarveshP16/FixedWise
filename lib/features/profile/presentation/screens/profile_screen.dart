@@ -95,15 +95,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
                 children: [
                   FixedwiseFieldShell(
                     label: 'Your name',
-                    child: FixedwiseInputBox(
-                      child: TextField(
-                        controller: _nameController,
-                        style: AppTypography.inputText,
-                        decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                        onChanged: (value) => ref
-                            .read(displayNameProvider.notifier)
-                            .setName(value.trim().isEmpty ? 'there' : value.trim()),
-                      ),
+                    child: TextField(
+                      controller: _nameController,
+                      style: AppTypography.inputText,
+                      onChanged: (value) =>
+                          ref.read(displayNameProvider.notifier).setName(value.trim().isEmpty ? 'there' : value.trim()),
                     ),
                   ),
                   ListTile(
@@ -402,6 +398,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
 
     final chosen = await showModalBottomSheet<BackupFolderFile>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,

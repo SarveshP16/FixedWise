@@ -142,16 +142,20 @@ class _DepositFormFieldsState extends State<DepositFormFields> {
               Row(
                 children: [
                   SizedBox(
-                    width: 120,
+                    width: 84,
                     child: TextField(
                       controller: _daysController,
                       style: AppTypography.inputText,
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
-                      decoration: const InputDecoration(prefixText: '+ ', suffixText: 'days', isDense: true),
+                      decoration: const InputDecoration(hintText: '0', isDense: true),
                       onChanged: (value) => _emit(_draft.copyWith(tenureDays: int.tryParse(value) ?? 0)),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // A plain label rather than the field's own prefix/suffix
+                  // text, which Flutter hides until the field has focus.
+                  Text('extra days', style: AppTypography.fieldLabel),
                   const Spacer(),
                   Text(describeTenure(_draft.tenureMonths, _draft.tenureDays), style: AppTypography.tenureValue),
                 ],

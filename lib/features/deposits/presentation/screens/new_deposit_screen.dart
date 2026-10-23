@@ -163,23 +163,14 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
                       ),
                     FixedwiseFieldShell(
                       label: 'FD number (optional)',
-                      child: FixedwiseInputBox(
-                        child: TextField(
-                          controller: _fdNumberController,
-                          style: AppTypography.inputText,
-                          decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                        ),
-                      ),
+                      child: TextField(controller: _fdNumberController, style: AppTypography.inputText),
                     ),
                     FixedwiseFieldShell(
                       label: 'Nominee (optional)',
-                      child: FixedwiseInputBox(
-                        child: TextField(
-                          controller: _nomineeController,
-                          style: AppTypography.inputText,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                        ),
+                      child: TextField(
+                        controller: _nomineeController,
+                        style: AppTypography.inputText,
+                        textCapitalization: TextCapitalization.words,
                       ),
                     ),
                     SwitchListTile.adaptive(

@@ -4,6 +4,16 @@ import '../domain/whats_new_entry.dart';
 /// from `CHANGELOG.md`.
 const whatsNewEntries = [
   WhatsNewEntry(
+    version: '1.1.1',
+    date: 'October 2026',
+    highlights: [
+      'App lock now hides everything behind it from screen readers too',
+      "Setting a PIN no longer locks the app on the spot",
+      'Tidier text fields, tenure input and early-closure dialog',
+      'Switching between light and dark theme now updates every screen right away',
+    ],
+  ),
+  WhatsNewEntry(
     version: '1.1.0',
     date: 'October 2026',
     highlights: [

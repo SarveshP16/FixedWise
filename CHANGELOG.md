@@ -5,6 +5,28 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-23
+
+### Fixed (found testing on a Nothing Phone (4a) Pro, Android 16)
+- While app lock was showing, screen readers could still read and
+  activate everything behind it; the locked content is now excluded from
+  accessibility.
+- Setting up a PIN locked the app straight away, over the screen you had
+  just used to set it.
+- Text fields wrapped in `FixedwiseInputBox` (your name, FD number)
+  drew a second box inside the first.
+- Bottom sheets opened from a tab (deposit sort, restore list) were
+  partly hidden behind the bottom navigation bar.
+- The tenure "extra days" box looked empty until focused; the
+  close-early dialog's two fields overlapped.
+- Switching between light and dark theme left tabs that were already
+  open in the old colours (dark text on dark) until the app restarted.
+
+### Added
+- README with screenshots, a getting-started guide and an interest
+  formula table; phone screenshots for the F-Droid listing; Ko-fi
+  sponsor link (`.github/FUNDING.yml`).
+
 ## [1.1.0] - 2026-10-23
 
 Prepared for open-source release on GitHub and F-Droid.

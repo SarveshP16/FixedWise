@@ -46,6 +46,7 @@ class _PinCreateScreenState extends ConsumerState<_PinCreateScreen> {
 
     if (pin == _firstEntry) {
       await ref.read(pinServiceProvider).setPin(pin);
+      ref.read(appLockProvider.notifier).unlock();
       await ref.read(appLockProvider.notifier).refresh();
       if (mounted) Navigator.of(context).pop(true);
     } else {

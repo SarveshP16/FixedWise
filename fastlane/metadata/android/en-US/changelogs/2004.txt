@@ -1,0 +1,3 @@
+• App lock now also hides your data from screen readers while locked
+• Setting a PIN no longer locks the app immediately
+• Tidier text fields, tenure "extra days" input and early-closure dialog
