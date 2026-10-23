@@ -43,9 +43,17 @@ class _PinEntryViewState extends State<PinEntryView> {
 
   void _onDigit(String digit) {
     if (_entered.length >= widget.digitCount) return;
-    setState(() => _entered += digit);
-    if (_entered.length == widget.digitCount) {
-      widget.onComplete(_entered);
+    final next = _entered + digit;
+    setState(() => _entered = next);
+    if (next.length == widget.digitCount) {
+      // Give the last dot time to actually paint (and its fill
+      // animation to finish, see PinDots' 150ms AnimatedContainer)
+      // before the caller reacts — callers typically swap this widget
+      // out via a new `key` or navigate away, which otherwise happens
+      // in the same frame and the fully-filled row never gets shown.
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted) widget.onComplete(next);
+      });
     }
   }
 

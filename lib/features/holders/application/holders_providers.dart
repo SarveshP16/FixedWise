@@ -40,6 +40,12 @@ class HoldersNotifier extends StateNotifier<List<Holder>> {
     state = _repository.getAll();
   }
 
+  Future<void> setSeniorCitizen(String id, bool value) async {
+    final holder = state.firstWhere((h) => h.id == id);
+    await _repository.update(holder.copyWith(isSeniorCitizen: value));
+    state = _repository.getAll();
+  }
+
   /// Callers must check `!holder.isSelf` and that no FD still references
   /// this holder before calling this — see `holders_screen.dart`'s delete
   /// confirmation, which does both.

@@ -25,7 +25,6 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   @override
   Widget build(BuildContext context) {
     final bankSuggestions = ref.watch(fixedDepositRepositoryProvider).distinctBankNames();
-    final currencySymbol = ref.watch(currencySymbolProvider);
 
     return Scaffold(
       body: SafeArea(

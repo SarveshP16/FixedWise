@@ -12,6 +12,7 @@ class DraftDeposit {
     required this.interestRatePercent,
     required this.principalAmount,
     required this.tenureMonths,
+    this.tenureDays = 0,
     required this.compounding,
     required this.payoutType,
   });
@@ -29,6 +30,7 @@ class DraftDeposit {
   final double interestRatePercent;
   final double principalAmount;
   final int tenureMonths;
+  final int tenureDays;
   final CompoundingFrequency compounding;
   final PayoutType payoutType;
 
@@ -37,6 +39,7 @@ class DraftDeposit {
     double? interestRatePercent,
     double? principalAmount,
     int? tenureMonths,
+    int? tenureDays,
     CompoundingFrequency? compounding,
     PayoutType? payoutType,
   }) {
@@ -45,8 +48,12 @@ class DraftDeposit {
       interestRatePercent: interestRatePercent ?? this.interestRatePercent,
       principalAmount: principalAmount ?? this.principalAmount,
       tenureMonths: tenureMonths ?? this.tenureMonths,
+      tenureDays: tenureDays ?? this.tenureDays,
       compounding: compounding ?? this.compounding,
       payoutType: payoutType ?? this.payoutType,
     );
   }
+
+  /// At least 7 days — the shortest FD Indian banks accept.
+  bool get hasValidTenure => tenureMonths * 30 + tenureDays >= 7;
 }

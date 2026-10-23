@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import 'app_lock_controller.dart';
 import 'pin_create_screen.dart';
+import 'pin_service.dart';
 import 'widgets/pin_entry_view.dart';
 
 /// The full-screen PIN prompt shown, opaquely, over the rest of the app
@@ -60,8 +61,10 @@ class _AppLockGateState extends ConsumerState<AppLockGate> {
     if (ok) {
       ref.read(appLockProvider.notifier).unlock();
     } else {
+      final lockout = await ref.read(pinServiceProvider).lockoutRemaining();
+      if (!mounted) return;
       setState(() {
-        _error = 'Incorrect PIN';
+        _error = pinRejectedMessage(lockout);
         _attempt++;
       });
     }

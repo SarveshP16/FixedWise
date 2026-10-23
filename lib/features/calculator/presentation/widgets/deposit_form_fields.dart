@@ -6,10 +6,12 @@ import '../../../../core/widgets/fixedwise_field_shell.dart';
 import '../../../../core/widgets/fixedwise_segmented_control.dart';
 import '../../../deposits/domain/compounding_frequency.dart';
 import '../../../deposits/domain/draft_deposit.dart';
+import '../../../deposits/domain/fixed_deposit.dart' show describeTenure;
 import '../../../deposits/domain/payout_type.dart';
 
 /// The fields shared by the standalone Calculator tab and the New Deposit
-/// form: Bank, Interest rate, Principal, Tenure, Compounding, Payout type.
+/// form: Bank, Interest rate, Principal, Tenure (months + extra days),
+/// Compounding, Payout type.
 /// Owns its own text controllers (the form's source of truth for typed
 /// values) and reports every change upward via [onChanged] so the parent
 /// screen can recompute its live output panel.
@@ -36,6 +38,7 @@ class _DepositFormFieldsState extends State<DepositFormFields> {
   late final TextEditingController _bankController;
   late final TextEditingController _rateController;
   late final TextEditingController _principalController;
+  late final TextEditingController _daysController;
 
   @override
   void initState() {
@@ -44,6 +47,7 @@ class _DepositFormFieldsState extends State<DepositFormFields> {
     _bankController = TextEditingController(text: _draft.bankName);
     _rateController = TextEditingController(text: _formatRate(_draft.interestRatePercent));
     _principalController = TextEditingController(text: _formatAmount(_draft.principalAmount));
+    _daysController = TextEditingController(text: _draft.tenureDays == 0 ? '' : '${_draft.tenureDays}');
   }
 
   @override
@@ -51,6 +55,7 @@ class _DepositFormFieldsState extends State<DepositFormFields> {
     _bankController.dispose();
     _rateController.dispose();
     _principalController.dispose();
+    _daysController.dispose();
     super.dispose();
   }
 
@@ -126,19 +131,43 @@ class _DepositFormFieldsState extends State<DepositFormFields> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              // 0–10 years: Indian banks take FDs from 7 days to 10 years.
               Slider(
-                value: _draft.tenureMonths.toDouble().clamp(3, 60),
-                min: 3,
-                max: 60,
-                divisions: 57,
+                value: _draft.tenureMonths.toDouble().clamp(0, 120),
+                min: 0,
+                max: 120,
+                divisions: 120,
                 onChanged: (value) => _emit(_draft.copyWith(tenureMonths: value.round())),
               ),
-              Text('${_draft.tenureMonths} months', style: AppTypography.tenureValue),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 120,
+                    child: TextField(
+                      controller: _daysController,
+                      style: AppTypography.inputText,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
+                      decoration: const InputDecoration(prefixText: '+ ', suffixText: 'days', isDense: true),
+                      onChanged: (value) => _emit(_draft.copyWith(tenureDays: int.tryParse(value) ?? 0)),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(describeTenure(_draft.tenureMonths, _draft.tenureDays), style: AppTypography.tenureValue),
+                ],
+              ),
+              if (!_draft.hasValidTenure)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('Banks accept FDs of 7 days or longer', style: AppTypography.dateLine),
+                ),
             ],
           ),
         ),
         FixedwiseFieldShell(
-          label: 'Compounding',
+          // For a non-cumulative FD this same choice is how often interest
+          // is paid out rather than how often it compounds.
+          label: _draft.payoutType == PayoutType.payout ? 'Interest paid' : 'Compounding',
           child: FixedwiseSegmentedControl<CompoundingFrequency>(
             options: CompoundingFrequency.values,
             labelBuilder: (value) => value.label,

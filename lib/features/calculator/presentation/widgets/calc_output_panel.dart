@@ -23,6 +23,7 @@ class CalcOutputPanel extends ConsumerWidget {
       ratePercent: draft.interestRatePercent,
       periodsPerYear: draft.compounding.periodsPerYear,
       tenureMonths: draft.tenureMonths,
+      tenureDays: draft.tenureDays,
       payoutType: draft.payoutType,
     );
     final interest = MaturityCalculator.interestEarnedRaw(
@@ -30,8 +31,11 @@ class CalcOutputPanel extends ConsumerWidget {
       ratePercent: draft.interestRatePercent,
       periodsPerYear: draft.compounding.periodsPerYear,
       tenureMonths: draft.tenureMonths,
+      tenureDays: draft.tenureDays,
       payoutType: draft.payoutType,
     );
+    final shortTerm =
+        MaturityCalculator.tenureYears(draft.tenureMonths, draft.tenureDays) < MaturityCalculator.shortTermYears;
 
     final isPayout = draft.payoutType == PayoutType.payout;
     final secondaryLine = isPayout
@@ -58,6 +62,8 @@ class CalcOutputPanel extends ConsumerWidget {
           const SizedBox(height: 10),
           Text(secondaryLine, style: AppTypography.calcLabel),
           if (isPayout) Text('Total interest over term: ${formatCurrency(ref, interest)}', style: AppTypography.calcLabel),
+          if (shortTerm && !isPayout)
+            Text('Under 6 months: banks pay simple interest at maturity', style: AppTypography.calcLabel),
         ],
       ),
     );
@@ -69,6 +75,8 @@ class CalcOutputPanel extends ConsumerWidget {
         return 'month';
       case 4:
         return 'quarter';
+      case 2:
+        return 'half-year';
       default:
         return 'year';
     }

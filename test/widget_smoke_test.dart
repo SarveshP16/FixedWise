@@ -83,6 +83,9 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, 'e.g. Axis Bank'), 'Test Bank');
     await tester.pump();
 
+    // The form is taller than the 800x600 test surface.
+    await tester.ensureVisible(find.text('Create deposit'));
+    await tester.pump();
     await tester.tap(find.text('Create deposit'));
     await _settle(tester);
 

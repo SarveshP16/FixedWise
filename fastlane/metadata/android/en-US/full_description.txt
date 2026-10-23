@@ -1,0 +1,33 @@
+<p>FixedWise keeps every Fixed Deposit your family holds in one place — which bank, how much, what rate, and when it matures — and reminds you before each one does. It is built for Indian bank FDs and works completely offline.</p>
+
+<p><b>Track</b></p>
+<ul>
+<li>All your FDs across family members (holders), grouped as active, matured or closed early</li>
+<li>A maturity ladder and a "maturing soon" list on the dashboard</li>
+<li>Reminders a chosen number of days before each FD matures</li>
+<li>Renew a matured FD in one step, or record an early closure with the bank's penalty</li>
+</ul>
+
+<p><b>Calculate the way banks do</b></p>
+<ul>
+<li>Cumulative or non-cumulative (monthly, quarterly, half-yearly, annual payout)</li>
+<li>Tenures in months and days, such as 444 days or 1 year 15 days</li>
+<li>Whole compounding periods plus simple interest on the broken period, and simple interest under 6 months</li>
+<li>Tax-saver (Section 80C) FDs with their 5-year lock-in</li>
+</ul>
+
+<p><b>Tax &amp; safety</b></p>
+<ul>
+<li>Interest per financial year (April–March), by holder and bank</li>
+<li>TDS estimate per bank using the current thresholds, including the higher senior-citizen limit</li>
+<li>A warning when one holder has more than the ₹5 lakh DICGC insurance cover at a single bank</li>
+</ul>
+
+<p><b>Private by design</b></p>
+<ul>
+<li>No internet permission, no ads, no trackers, no account</li>
+<li>Optional app lock with PIN or fingerprint; screenshots blocked while locked</li>
+<li>Automatic backups to any folder you choose (keep it in a Syncthing or Nextcloud folder for an off-device copy), plus manual export/import</li>
+</ul>
+
+<p>Figures are estimates to help you plan — always confirm with your bank. Tax figures are not tax advice.</p>

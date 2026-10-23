@@ -11,6 +11,7 @@ import '../../features/holders/presentation/screens/holders_screen.dart';
 import '../../features/profile/presentation/screens/about_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/whats_new_screen.dart';
+import '../../features/tax/presentation/screens/tax_summary_screen.dart';
 import 'app_shell.dart';
 
 /// App-wide route table. A [StatefulShellRoute] gives each bottom-nav tab
@@ -19,7 +20,7 @@ import 'app_shell.dart';
 ///
 /// New Deposit, Deposit Detail, and Holders are declared as top-level
 /// routes *outside* the shell rather than nested under Deposits/Profile —
-/// same rationale as Pulse's router: a nested route would force the
+/// because a nested route would force the
 /// Deposits branch onto the stack whenever you deep-link into a detail
 /// screen, so the back button would land on the list instead of wherever
 /// you actually came from. As independent top-level routes, each one
@@ -49,7 +50,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(path: '/deposits/new', builder: (context, state) => const NewDepositScreen()),
+      GoRoute(
+        path: '/deposits/new',
+        builder: (context, state) => NewDepositScreen(renewFromId: state.uri.queryParameters['renewFrom']),
+      ),
       GoRoute(
         path: '/deposits/:id',
         builder: (context, state) => DepositDetailScreen(depositId: state.pathParameters['id']!),
@@ -57,6 +61,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/holders', builder: (context, state) => const HoldersScreen()),
       GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),
       GoRoute(path: '/whats-new', builder: (context, state) => const WhatsNewScreen()),
+      GoRoute(path: '/tax', builder: (context, state) => const TaxSummaryScreen()),
     ],
   );
 });

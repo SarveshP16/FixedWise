@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../core/backup/auto_backup_frequency.dart';
+import '../../../core/backup/backup_folder_service.dart';
 import '../../../core/theme/theme_preference.dart';
 import '../../../core/utils/currency_formatter.dart' show settingsRepositoryProvider;
 import '../data/settings_repository.dart';
@@ -41,24 +42,30 @@ class NotificationLeadDaysNotifier extends StateNotifier<int> {
   }
 }
 
-/// The connected Google account's email if Drive backup is set up, else
-/// `null` — Profile shows "Not connected" until this is set.
-final googleDriveConnectedEmailProvider = StateNotifierProvider<GoogleDriveConnectedEmailNotifier, String?>((ref) {
-  return GoogleDriveConnectedEmailNotifier(ref.watch(settingsRepositoryProvider));
+/// The folder automatic backups are written to, or `null` until the user
+/// picks one — see `BackupFolderService`.
+final backupFolderProvider = StateNotifierProvider<BackupFolderNotifier, BackupFolder?>((ref) {
+  return BackupFolderNotifier(ref.watch(settingsRepositoryProvider));
 });
 
-class GoogleDriveConnectedEmailNotifier extends StateNotifier<String?> {
-  GoogleDriveConnectedEmailNotifier(this._repository) : super(_repository.getGoogleDriveConnectedEmail());
+class BackupFolderNotifier extends StateNotifier<BackupFolder?> {
+  BackupFolderNotifier(this._repository) : super(_read(_repository));
 
   final SettingsRepository _repository;
 
-  Future<void> setEmail(String? email) async {
-    state = email;
-    await _repository.setGoogleDriveConnectedEmail(email);
+  static BackupFolder? _read(SettingsRepository repository) {
+    final uri = repository.getBackupFolderUri();
+    if (uri == null) return null;
+    return BackupFolder(treeUri: uri, name: repository.getBackupFolderName() ?? 'Selected folder');
+  }
+
+  Future<void> setFolder(BackupFolder? folder) async {
+    state = folder;
+    await _repository.setBackupFolder(uri: folder?.treeUri, name: folder?.name);
   }
 }
 
-/// How often FixedWise checks-and-runs a Drive backup on app launch —
+/// How often FixedWise checks-and-runs a folder backup on app launch —
 /// see `auto_backup.dart`. Changing this doesn't itself trigger a
 /// backup; the next launch's check picks up the new setting.
 final autoBackupFrequencyProvider = StateNotifierProvider<AutoBackupFrequencyNotifier, AutoBackupFrequency>((ref) {
@@ -76,22 +83,17 @@ class AutoBackupFrequencyNotifier extends StateNotifier<AutoBackupFrequency> {
   }
 }
 
-/// When the last successful Drive backup (auto or manual) completed, for
+/// When the last successful folder backup (auto or manual) completed, for
 /// Profile's "Last backup" line — `null` if there's never been one.
-final lastGoogleDriveBackupAtProvider = StateNotifierProvider<LastGoogleDriveBackupAtNotifier, DateTime?>((ref) {
-  return LastGoogleDriveBackupAtNotifier(ref.watch(settingsRepositoryProvider));
+final lastAutoBackupAtProvider = StateNotifierProvider<LastAutoBackupAtNotifier, DateTime?>((ref) {
+  return LastAutoBackupAtNotifier(ref.watch(settingsRepositoryProvider));
 });
 
-class LastGoogleDriveBackupAtNotifier extends StateNotifier<DateTime?> {
-  LastGoogleDriveBackupAtNotifier(this._repository) : super(_repository.getLastGoogleDriveBackupAt());
+class LastAutoBackupAtNotifier extends StateNotifier<DateTime?> {
+  LastAutoBackupAtNotifier(SettingsRepository repository) : super(repository.getLastAutoBackupAt());
 
-  final SettingsRepository _repository;
-
-  Future<void> recordNow() async {
-    final now = DateTime.now();
-    state = now;
-    await _repository.setLastGoogleDriveBackupAt(now);
-  }
+  /// [backUpToFolderNow] already persisted [at]; this only mirrors it.
+  void record(DateTime at) => state = at;
 }
 
 /// The user's chosen appearance (system/light/dark) — see [ThemePreference].

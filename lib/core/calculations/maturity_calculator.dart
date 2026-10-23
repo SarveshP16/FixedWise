@@ -16,22 +16,63 @@ import 'chart_point.dart';
 /// delegate to the raw functions, used by Dashboard/Deposits/Detail once a
 /// record actually exists.
 abstract final class MaturityCalculator {
-  /// `P·(1+r/n)^(n·t)` for a cumulative FD (matches the mockup's own JS
-  /// formula exactly — see the regression test pinned in
-  /// `maturity_calculator_test.dart`); for a payout FD, interest is
-  /// disbursed each period rather than reinvested, so the principal alone
-  /// is what's returned at maturity.
+  /// Indian banks pay plain simple interest on deposits shorter than six
+  /// months, whatever compounding the scheme otherwise uses.
+  static const shortTermYears = 0.5;
+
+  /// Whole calendar days from [from] to [to], ignoring time of day and
+  /// immune to DST shifts (a raw `difference().inDays` across a DST change
+  /// comes up an hour — and so a whole day — short).
+  static int daysBetween(DateTime from, DateTime to) =>
+      DateTime.utc(to.year, to.month, to.day).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+
+  /// [months] + [days] as years — banks count days on an actual/365 basis.
+  static double tenureYears(int months, int days) => months / 12 + days / 365;
+
+  /// What [principal] grows to over [years] when interest is reinvested,
+  /// the way Indian banks compute it (IBA convention): compounded for
+  /// every *complete* period, then simple interest on that compounded
+  /// amount for the leftover "broken" days — e.g. 13 months quarterly is
+  /// 4 compounded quarters plus one month of simple interest. For whole-
+  /// period tenures this is exactly `P·(1+r/n)^(n·t)` (the mockup's own
+  /// formula, pinned in `maturity_calculator_test.dart`). [shortTerm]
+  /// (a sub-six-month tenure) switches to simple interest throughout.
+  static double _cumulativeValue({
+    required double principal,
+    required double ratePercent,
+    required int periodsPerYear,
+    required double years,
+    required bool shortTerm,
+  }) {
+    final r = ratePercent / 100;
+    if (years <= 0) return principal;
+    if (shortTerm) return principal * (1 + r * years);
+    // The epsilon keeps e.g. 24/12*4 = 7.999… from flooring to 7.
+    final fullPeriods = (years * periodsPerYear + 1e-9).floor();
+    final brokenYears = math.max(0.0, years - fullPeriods / periodsPerYear);
+    return principal * math.pow(1 + r / periodsPerYear, fullPeriods) * (1 + r * brokenYears);
+  }
+
+  /// Maturity value: see [_cumulativeValue] for a cumulative FD; for a
+  /// payout FD, interest is disbursed each period rather than reinvested,
+  /// so the principal alone is what's returned at maturity.
   static double maturityValueRaw({
     required double principal,
     required double ratePercent,
     required int periodsPerYear,
     required int tenureMonths,
+    int tenureDays = 0,
     required PayoutType payoutType,
   }) {
     if (payoutType == PayoutType.payout) return principal;
-    final r = ratePercent / 100;
-    final t = tenureMonths / 12;
-    return principal * math.pow(1 + r / periodsPerYear, periodsPerYear * t);
+    final years = tenureYears(tenureMonths, tenureDays);
+    return _cumulativeValue(
+      principal: principal,
+      ratePercent: ratePercent,
+      periodsPerYear: periodsPerYear,
+      years: years,
+      shortTerm: years < shortTermYears,
+    );
   }
 
   /// Total interest over the full term: for cumulative, the compounded
@@ -42,25 +83,25 @@ abstract final class MaturityCalculator {
     required double ratePercent,
     required int periodsPerYear,
     required int tenureMonths,
+    int tenureDays = 0,
     required PayoutType payoutType,
   }) {
     if (payoutType == PayoutType.payout) {
-      final r = ratePercent / 100;
-      final t = tenureMonths / 12;
-      return principal * r * t;
+      return principal * (ratePercent / 100) * tenureYears(tenureMonths, tenureDays);
     }
     return maturityValueRaw(
           principal: principal,
           ratePercent: ratePercent,
           periodsPerYear: periodsPerYear,
           tenureMonths: tenureMonths,
+          tenureDays: tenureDays,
           payoutType: payoutType,
         ) -
         principal;
   }
 
   /// The amount disbursed each compounding period for a payout FD, e.g.
-  /// "$183 every quarter". Meaningless for a cumulative FD (nothing is
+  /// "₹185 every quarter". Meaningless for a cumulative FD (nothing is
   /// paid out along the way), so callers should only surface this when
   /// [PayoutType.payout] is selected.
   static double payoutPerPeriodRaw({
@@ -83,14 +124,17 @@ abstract final class MaturityCalculator {
   }
 
   /// Value accrued so far (not the final maturity value): a cumulative FD
-  /// compounds partially through the term — exactly [principal] at the
-  /// start and exactly [maturityValueRaw] at maturity — while a payout FD's
-  /// book value never grows (its interest is disbursed, not retained).
+  /// grows by the same complete-periods-plus-broken-days rule as
+  /// [maturityValueRaw], applied to the time elapsed — exactly [principal]
+  /// at the start and exactly [maturityValueRaw] at maturity — while a
+  /// payout FD's book value never grows (its interest is disbursed, not
+  /// retained).
   static double accruedValueAt({
     required double principal,
     required double ratePercent,
     required int periodsPerYear,
     required int tenureMonths,
+    int tenureDays = 0,
     required PayoutType payoutType,
     required DateTime openedDate,
     required DateTime maturityDate,
@@ -98,24 +142,37 @@ abstract final class MaturityCalculator {
   }) {
     if (payoutType == PayoutType.payout) return principal;
     final f = progressFraction(openedDate: openedDate, maturityDate: maturityDate, asOf: asOf);
-    final r = ratePercent / 100;
-    final t = (tenureMonths / 12) * f;
-    return principal * math.pow(1 + r / periodsPerYear, periodsPerYear * t);
+    final years = tenureYears(tenureMonths, tenureDays);
+    return _cumulativeValue(
+      principal: principal,
+      ratePercent: ratePercent,
+      periodsPerYear: periodsPerYear,
+      years: years * f,
+      shortTerm: years < shortTermYears,
+    );
   }
 
-  /// A closed-early payout, for both FD types: simple (non-compounding)
-  /// pro-rata interest for the time actually held, plus principal — a
-  /// deliberate simplification documented in the implementation plan,
-  /// not a full recomputation against the bank's real early-closure terms.
+  /// Typical premature-withdrawal penalty: most Indian banks charge 0.5%
+  /// below the applicable rate on smaller deposits and 1% on ₹5 lakh and
+  /// above. Only a starting point — the close-early dialog lets the user
+  /// change it, or type in what the bank actually paid.
+  static double defaultPrematurePenaltyPercent(double principal) => principal < 500000 ? 0.5 : 1.0;
+
+  /// A closed-early payout, for both FD types: simple pro-rata interest for
+  /// the time actually held at the booked rate minus [penaltyPercent],
+  /// plus principal. Banks really apply the card rate for the period held
+  /// (not the booked rate) minus the penalty — FixedWise doesn't know
+  /// each bank's historical card rates, so this is an estimate.
   static double closedEarlyValue({
     required double principal,
     required double ratePercent,
     required DateTime openedDate,
     required DateTime closedDate,
+    double penaltyPercent = 0,
   }) {
-    final heldDays = closedDate.difference(openedDate).inDays;
-    final r = ratePercent / 100;
-    return principal + principal * r * (heldDays / 365.25);
+    final heldDays = daysBetween(openedDate, closedDate);
+    final r = math.max(0.0, ratePercent - penaltyPercent) / 100;
+    return principal + principal * r * (heldDays / 365);
   }
 
   /// Sampled points for Detail's growth chart: a rising curve for
@@ -133,6 +190,7 @@ abstract final class MaturityCalculator {
         ratePercent: fd.interestRatePercent,
         periodsPerYear: fd.compounding.periodsPerYear,
         tenureMonths: fd.tenureMonths,
+        tenureDays: fd.tenureDays,
         payoutType: fd.payoutType,
         openedDate: fd.openedDate,
         maturityDate: fd.maturityDate,
@@ -160,6 +218,7 @@ abstract final class MaturityCalculator {
         ratePercent: fd.interestRatePercent,
         periodsPerYear: fd.compounding.periodsPerYear,
         tenureMonths: fd.tenureMonths,
+        tenureDays: fd.tenureDays,
         payoutType: fd.payoutType,
         openedDate: fd.openedDate,
         maturityDate: fd.maturityDate,
@@ -185,6 +244,7 @@ abstract final class MaturityCalculator {
     ratePercent: fd.interestRatePercent,
     periodsPerYear: fd.compounding.periodsPerYear,
     tenureMonths: fd.tenureMonths,
+    tenureDays: fd.tenureDays,
     payoutType: fd.payoutType,
   );
 
@@ -193,6 +253,7 @@ abstract final class MaturityCalculator {
     ratePercent: fd.interestRatePercent,
     periodsPerYear: fd.compounding.periodsPerYear,
     tenureMonths: fd.tenureMonths,
+    tenureDays: fd.tenureDays,
     payoutType: fd.payoutType,
   );
 
@@ -210,16 +271,19 @@ abstract final class MaturityCalculator {
     ratePercent: fd.interestRatePercent,
     periodsPerYear: fd.compounding.periodsPerYear,
     tenureMonths: fd.tenureMonths,
+    tenureDays: fd.tenureDays,
     payoutType: fd.payoutType,
     openedDate: fd.openedDate,
     maturityDate: fd.maturityDate,
     asOf: asOf,
   );
 
-  static double fdClosedEarlyValue(FixedDeposit fd, {required DateTime closedDate}) => closedEarlyValue(
-    principal: fd.principalAmount,
-    ratePercent: fd.interestRatePercent,
-    openedDate: fd.openedDate,
-    closedDate: closedDate,
-  );
+  static double fdClosedEarlyValue(FixedDeposit fd, {required DateTime closedDate, double penaltyPercent = 0}) =>
+      closedEarlyValue(
+        principal: fd.principalAmount,
+        ratePercent: fd.interestRatePercent,
+        openedDate: fd.openedDate,
+        closedDate: closedDate,
+        penaltyPercent: penaltyPercent,
+      );
 }

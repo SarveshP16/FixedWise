@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/bordered_icon_button.dart';
 import '../../../../core/widgets/fixedwise_card.dart';
@@ -11,7 +12,8 @@ import '../../application/holders_providers.dart';
 import '../../domain/holder.dart';
 
 /// Manage the people FDs can be tagged to — the app owner ("Self", which
-/// can be renamed but never deleted) plus any family members.
+/// can be renamed but never deleted) plus any family members — and mark
+/// who's a senior citizen, which changes their TDS threshold.
 class HoldersScreen extends ConsumerWidget {
   const HoldersScreen({super.key});
 
@@ -101,11 +103,21 @@ class _HolderRow extends ConsumerWidget {
               children: [
                 Text(holder.name, style: AppTypography.bankName),
                 Text(
-                  holder.isSelf ? 'You · $fdCount FD${fdCount == 1 ? '' : 's'}' : '$fdCount FD${fdCount == 1 ? '' : 's'}',
+                  [
+                    if (holder.isSelf) 'You',
+                    '$fdCount FD${fdCount == 1 ? '' : 's'}',
+                    if (holder.isSeniorCitizen) 'Senior citizen',
+                  ].join(' · '),
                   style: AppTypography.dateLine,
                 ),
               ],
             ),
+          ),
+          IconButton(
+            tooltip: holder.isSeniorCitizen ? 'Senior citizen (60+)' : 'Mark as senior citizen (60+)',
+            icon: Icon(holder.isSeniorCitizen ? Icons.elderly : Icons.elderly_outlined, size: 18),
+            color: holder.isSeniorCitizen ? AppColors.brassDeep : null,
+            onPressed: () => ref.read(holdersProvider.notifier).setSeniorCitizen(holder.id, !holder.isSeniorCitizen),
           ),
           IconButton(icon: const Icon(Icons.edit_outlined, size: 18), onPressed: () => _rename(context, ref)),
           if (!holder.isSelf)

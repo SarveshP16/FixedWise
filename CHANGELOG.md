@@ -5,6 +5,51 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-23
+
+Prepared for open-source release on GitHub and F-Droid.
+
+### Removed
+- **Google Drive backup** (`google_sign_in` + `http`), **AdMob banner ads**
+  (`google_mobile_ads`) and the **"Remove ads" purchase**
+  (`in_app_purchase`): all three are proprietary Google libraries that
+  F-Droid doesn't accept. The app now has no network access at all —
+  there's no `INTERNET` permission in the release manifest.
+- `google_fonts` (fetched fonts from Google at runtime) — Fraunces and IBM
+  Plex Sans are now bundled under `assets/fonts/` with their OFL licenses.
+- Unused `cupertino_icons`, `path`, `path_provider` direct deps and the
+  `web/` target (the app relies on `dart:io` and never ran on web).
+
+### Added
+- **Automatic folder backups** (`lib/core/backup/backup_folder_service.dart`
+  + `MainActivity.kt`): pick any folder through Android's folder picker
+  (Storage Access Framework, no storage permission); FixedWise writes a
+  JSON backup there daily/weekly/monthly on launch and keeps the last 5.
+  Restore lists the folder's backups directly.
+- **Android Auto Backup** configured (`res/xml/*backup*rules.xml`), with
+  flutter_secure_storage excluded since its Keystore keys can't move
+  between devices.
+- **Indian FD rules**: tenures in months + days; IBA-style interest
+  (compound whole periods, simple interest on the broken period, simple
+  interest under 6 months); half-yearly compounding; month-end maturity
+  dates clamp to the last day of the month (31 Jan + 1 month = 28 Feb);
+  tax-saver (80C) FDs with a 5-year lock-in; nominee; senior-citizen
+  holders.
+- **Tax & TDS screen** (`/tax`, dashboard quick action): interest per
+  financial year by holder and bank, Section 194A TDS estimate using the
+  FY 2025-26 thresholds, and a DICGC ₹5 lakh per-bank cover check.
+- Close early asks for the premature-withdrawal penalty (0.5% below
+  ₹5 lakh, 1% above, editable) or the exact amount credited.
+- `FLAG_SECURE` while an app-lock PIN is set (no screenshots/recents
+  preview).
+
+### Changed
+- App-lock PIN is stored as salted PBKDF2-HMAC-SHA256 (old SHA-256 hashes
+  upgrade on next unlock) with an escalating lockout after 5 wrong tries.
+- Restoring a backup validates every record before replacing anything,
+  and device-specific settings are no longer exported/restored.
+- Money uses Indian digit grouping (`en_IN`); rates show up to 2 decimals.
+
 ## [1.0.0] - 2026-09-02
 
 First real release — everything up to and including this point was

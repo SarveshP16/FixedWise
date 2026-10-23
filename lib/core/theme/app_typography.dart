@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
@@ -11,10 +10,10 @@ import 'app_colors.dart';
 /// rather than building a raw [TextStyle].
 ///
 /// Two families only: 'Fraunces' (serif, headings and big figures) and
-/// 'IBM Plex Sans' (everything else). Note: `google_fonts` serves static
-/// per-weight instances of Fraunces, not its true variable "opsz" optical-
-/// size axis from the mockup's `@import` — approximated here by picking a
-/// weight/size per role rather than reproducing the axis.
+/// 'IBM Plex Sans' (everything else), both bundled under `assets/fonts/`
+/// (see pubspec.yaml) as static per-weight instances — Fraunces' variable
+/// "opsz" optical-size axis from the mockup's `@import` is approximated by
+/// picking a weight/size per role rather than reproducing the axis.
 ///
 /// Every size below is still written as the mockup's literal CSS px value
 /// (so it stays traceable to the source), but scaled up by [_scale] before
@@ -29,7 +28,8 @@ abstract final class AppTypography {
     required double size,
     FontWeight weight = FontWeight.w500,
     Color? color,
-  }) => GoogleFonts.fraunces(
+  }) => TextStyle(
+    fontFamily: 'Fraunces',
     fontSize: size * _scale,
     fontWeight: weight,
     color: color,
@@ -40,7 +40,7 @@ abstract final class AppTypography {
     required double size,
     FontWeight weight = FontWeight.w400,
     Color? color,
-  }) => GoogleFonts.ibmPlexSans(fontSize: size * _scale, fontWeight: weight, color: color);
+  }) => TextStyle(fontFamily: 'IBM Plex Sans', fontSize: size * _scale, fontWeight: weight, color: color);
 
   // ---- Fraunces (serif): headings, big figures, chip initials ----
 

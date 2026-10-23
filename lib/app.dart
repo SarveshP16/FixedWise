@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/router/app_router.dart';
 import 'core/security/app_lock_controller.dart';
 import 'core/security/app_lock_gate.dart';
+import 'core/security/secure_screen.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'features/profile/application/settings_providers.dart';
@@ -58,6 +59,9 @@ class _FixedWiseAppState extends ConsumerState<FixedWiseApp> with WidgetsBinding
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(appLockProvider.select((state) => state.pinConfigured), (_, configured) {
+      SecureScreen.setEnabled(configured);
+    });
     final router = ref.watch(appRouterProvider);
     final isLocked = ref.watch(appLockProvider).isLocked;
     final themeMode = ref.watch(themePreferenceProvider).themeMode;

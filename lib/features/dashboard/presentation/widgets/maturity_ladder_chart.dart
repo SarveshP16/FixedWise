@@ -108,19 +108,22 @@ class _Bar extends StatelessWidget {
       alignment: Alignment.bottomCenter,
       clipBehavior: Clip.none,
       children: [
+        Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6), bottom: Radius.circular(3)),
+          ),
+        ),
+        // Painted after (on top of) the bar fill above — the on-bar
+        // (labelOnDark) case positions this inside the bar's own height,
+        // so it'd otherwise be hidden behind that Container.
         Positioned(
           bottom: labelOnDark ? height - 16 : height + 2,
           child: Text(
             amountLabel,
             style: AppTypography.ladderAmount.copyWith(color: labelOnDark ? AppColors.heroOnDark : AppColors.text),
             softWrap: false,
-          ),
-        ),
-        Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(6), bottom: Radius.circular(3)),
           ),
         ),
       ],

@@ -1,0 +1,42 @@
+# Draft F-Droid build recipe. To submit: fork https://gitlab.com/fdroid/fdroiddata,
+# copy this file to metadata/com.fixedwise.app.yml there, check it with
+# `fdroid lint com.fixedwise.app` and `fdroid build com.fixedwise.app`, then
+# open a merge request. App description, icon and changelogs come from
+# fastlane/metadata/android/ in this repo, so they aren't repeated here.
+Categories:
+  - Money
+License: GPL-3.0-only
+AuthorName: Sarvesh Pandit
+SourceCode: https://github.com/SarveshP16/FixedWise
+IssueTracker: https://github.com/SarveshP16/FixedWise/issues
+Changelog: https://github.com/SarveshP16/FixedWise/blob/HEAD/CHANGELOG.md
+
+AutoName: FixedWise
+
+RepoType: git
+Repo: https://github.com/SarveshP16/FixedWise.git
+
+Builds:
+  - versionName: 1.1.0
+    versionCode: 2003
+    commit: v1.1.0
+    output: build/app/outputs/flutter-apk/app-release.apk
+    srclibs:
+      - flutter@3.47.2
+    rm:
+      - ios
+    prebuild:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get
+    scandelete:
+      - .pub-cache
+    build:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
+CurrentVersion: 1.1.0
+CurrentVersionCode: 2003

@@ -1,0 +1,7 @@
+• Tax & TDS view: interest per financial year, TDS estimate per bank, DICGC ₹5 lakh check
+• Tenures in months + days, bank-accurate interest for odd and short tenures
+• Half-yearly compounding, tax-saver (80C) FDs, nominee, senior citizens
+• Automatic backups to a folder you choose
+• Early closure accounts for the bank's penalty
+• Indian number format (₹12,34,567)
+• No ads, no trackers, no internet permission

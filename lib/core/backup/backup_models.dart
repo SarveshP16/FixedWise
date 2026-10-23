@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:hive/hive.dart';
 
+import '../../features/deposits/domain/fixed_deposit.dart';
+import '../../features/holders/domain/holder.dart';
+import '../../features/profile/data/settings_repository.dart';
 import '../storage/hive_boxes.dart';
 
 const _backupFormatVersion = 1;
@@ -13,7 +16,8 @@ const _backupFormatVersion = 1;
 String buildExportJson() {
   final holders = Hive.box<Map>(HiveBoxes.holders).values.toList();
   final deposits = Hive.box<Map>(HiveBoxes.fixedDeposits).values.toList();
-  final settings = Hive.box(HiveBoxes.settings).toMap();
+  final settings = Hive.box(HiveBoxes.settings).toMap()
+    ..removeWhere((key, _) => SettingsRepository.deviceOnlyKeys.contains(key));
 
   final document = {
     'fixedwiseExport': true,
@@ -76,6 +80,7 @@ class ParsedBackup {
     }
 
     for (final entry in settings.entries) {
+      if (SettingsRepository.deviceOnlyKeys.contains(entry.key)) continue;
       await settingsBox.put(entry.key, entry.value);
     }
   }
@@ -108,10 +113,29 @@ ParsedBackup parseBackup(String json) {
   final exportedAtRaw = decoded['exportedAt'];
   final exportedAt = exportedAtRaw is String ? DateTime.tryParse(exportedAtRaw) : null;
 
+  // Every record is round-tripped through its model *before* anything is
+  // applied — [ParsedBackup.apply] clears the boxes first, so a single
+  // malformed record (a hand-edited or truncated file) must be rejected
+  // here rather than wiping the user's data and then crashing on read.
+  final List<Map<String, dynamic>> holders;
+  final List<Map<String, dynamic>> deposits;
+  try {
+    holders = [
+      if (rawHolders is List)
+        for (final raw in rawHolders) Holder.fromMap(raw as Map).toMap(),
+    ];
+    deposits = [
+      if (rawDeposits is List)
+        for (final raw in rawDeposits) FixedDeposit.fromMap(raw as Map).toMap(),
+    ];
+  } catch (_) {
+    throw const InvalidBackupException('That backup file is damaged or from an incompatible version.');
+  }
+
   return ParsedBackup(
     exportedAt: exportedAt,
-    holders: rawHolders is List ? rawHolders.cast<Map<String, dynamic>>() : const [],
-    fixedDeposits: rawDeposits is List ? rawDeposits.cast<Map<String, dynamic>>() : const [],
+    holders: holders,
+    fixedDeposits: deposits,
     settings: rawSettings is Map<String, dynamic> ? rawSettings : const {},
   );
 }

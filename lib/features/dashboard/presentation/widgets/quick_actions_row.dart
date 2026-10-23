@@ -6,10 +6,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/fixedwise_card.dart';
 
 /// The dashboard's 3 quick-action buttons (`.quick .qbtn`): New deposit,
-/// Calculator, and Statements — a "statement" of your FDs is the deposits
-/// list itself, not Settings, so this routes to Deposits (it used to
-/// route to Profile, which was a confusing dead end for anyone tapping it
-/// expecting to see their FDs).
+/// Calculator, and Interest & TDS — the per-financial-year interest, TDS
+/// and DICGC-cover summary (`TaxSummaryScreen`).
 class QuickActionsRow extends StatelessWidget {
   const QuickActionsRow({super.key});
 
@@ -36,8 +34,8 @@ class QuickActionsRow extends StatelessWidget {
         Expanded(
           child: _QuickAction(
             icon: Icons.receipt_long_outlined,
-            label: 'Statements',
-            onTap: () => context.go('/deposits'),
+            label: 'Tax & TDS',
+            onTap: () => context.push('/tax'),
           ),
         ),
       ],

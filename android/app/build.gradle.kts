@@ -1,7 +1,20 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// android/key.properties holds the release keystore's location/passwords
+// and is gitignored — never committed. Missing entirely is fine (e.g. a
+// fresh checkout that hasn't generated one yet); the release build just
+// falls back to signing with the debug key in that case, same as before.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -32,11 +45,35 @@ android {
         versionName = flutter.versionName
     }
 
+    // AGP otherwise embeds a Google-encrypted dependency report in the APK
+    // signing block — F-Droid's scanner rejects it, and nothing else reads
+    // it outside Play Console.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String?
+                keyPassword = keystoreProperties["keyPassword"] as String?
+                storeFile = keystoreProperties["storeFile"]?.let { file(it) }
+                storePassword = keystoreProperties["storePassword"] as String?
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                // No key.properties yet (e.g. a fresh checkout) — fall
+                // back to the debug key so `flutter run --release` still
+                // works, same as the original Flutter template default.
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

@@ -5,7 +5,7 @@
 /// formula.
 enum PayoutType {
   cumulative(storageKey: 'cumulative', label: 'Cumulative'),
-  payout(storageKey: 'payout', label: 'Payout');
+  payout(storageKey: 'payout', label: 'Non-Cumulative');
 
   const PayoutType({required this.storageKey, required this.label});
 

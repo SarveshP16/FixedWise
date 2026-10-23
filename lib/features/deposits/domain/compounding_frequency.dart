@@ -4,6 +4,7 @@
 enum CompoundingFrequency {
   monthly(periodsPerYear: 12, storageKey: 'monthly', label: 'Monthly'),
   quarterly(periodsPerYear: 4, storageKey: 'quarterly', label: 'Quarterly'),
+  halfYearly(periodsPerYear: 2, storageKey: 'halfYearly', label: 'Half-yearly'),
   annually(periodsPerYear: 1, storageKey: 'annually', label: 'Annually');
 
   const CompoundingFrequency({required this.periodsPerYear, required this.storageKey, required this.label});

@@ -14,7 +14,19 @@
     <application
         android:label="FixedWise"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
+        <!-- Android Auto Backup: the OS itself copies FixedWise's Hive
+             data to the user's Google account (end-to-end encrypted with
+             their screen lock on Android 9+) and restores it on reinstall
+             or a new phone — free, no sign-in, no OAuth client, and it
+             works the same on F-Droid builds. The rules files exclude
+             flutter_secure_storage's prefs: the app-lock PIN hash there is
+             encrypted with a Keystore key that never leaves this device,
+             so restoring it elsewhere would only leave an unreadable
+             entry behind. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

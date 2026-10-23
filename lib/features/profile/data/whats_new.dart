@@ -4,6 +4,19 @@ import '../domain/whats_new_entry.dart';
 /// from `CHANGELOG.md`.
 const whatsNewEntries = [
   WhatsNewEntry(
+    version: '1.1.0',
+    date: 'October 2026',
+    highlights: [
+      'New Tax & TDS view: interest per financial year, TDS estimate per bank, and a DICGC ₹5 lakh cover check',
+      'Tenures in months and days (e.g. 444 days), with bank-accurate interest for odd and short tenures',
+      'Half-yearly compounding, tax-saver (80C) FDs, nominee and senior-citizen details',
+      'Automatic daily/weekly/monthly backups to any folder you choose — no Google sign-in needed',
+      'Close early now accounts for the bank\'s premature-withdrawal penalty',
+      'Amounts shown the Indian way: ₹12,34,567',
+      'Fully offline and open source: no ads, no trackers, no internet permission',
+    ],
+  ),
+  WhatsNewEntry(
     version: '1.0.0',
     date: 'September 2026',
     highlights: [

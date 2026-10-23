@@ -59,6 +59,83 @@ void main() {
     });
   });
 
+  group('Indian bank conventions', () {
+    test('a broken period earns simple interest on the compounded amount', () {
+      // 13 months quarterly: 4 full quarters compounded, then 1 month simple.
+      final maturity = MaturityCalculator.maturityValueRaw(
+        principal: 100000,
+        ratePercent: 7,
+        periodsPerYear: 4,
+        tenureMonths: 13,
+        payoutType: PayoutType.cumulative,
+      );
+      final afterFourQuarters = 100000 * 1.0175 * 1.0175 * 1.0175 * 1.0175;
+      expect(maturity, closeTo(afterFourQuarters * (1 + 0.07 / 12), 0.01));
+    });
+
+    test('extra days count as a broken period too', () {
+      // 1 year 15 days quarterly.
+      final maturity = MaturityCalculator.maturityValueRaw(
+        principal: 100000,
+        ratePercent: 7,
+        periodsPerYear: 4,
+        tenureMonths: 12,
+        tenureDays: 15,
+        payoutType: PayoutType.cumulative,
+      );
+      final afterFourQuarters = 100000 * 1.0175 * 1.0175 * 1.0175 * 1.0175;
+      expect(maturity, closeTo(afterFourQuarters * (1 + 0.07 * 15 / 365), 0.01));
+    });
+
+    test('under six months is plain simple interest', () {
+      final maturity = MaturityCalculator.maturityValueRaw(
+        principal: 100000,
+        ratePercent: 6,
+        periodsPerYear: 4,
+        tenureMonths: 0,
+        tenureDays: 91,
+        payoutType: PayoutType.cumulative,
+      );
+      expect(maturity, closeTo(100000 * (1 + 0.06 * 91 / 365), 0.01));
+    });
+
+    test('half-yearly compounding', () {
+      final maturity = MaturityCalculator.maturityValueRaw(
+        principal: 100000,
+        ratePercent: 8,
+        periodsPerYear: 2,
+        tenureMonths: 24,
+        payoutType: PayoutType.cumulative,
+      );
+      expect(maturity, closeTo(100000 * 1.04 * 1.04 * 1.04 * 1.04, 0.01));
+    });
+
+    test('accrued value at maturity still equals the maturity value for a broken tenure', () {
+      final opened = DateTime(2026, 1, 1);
+      final matures = addTenure(opened, months: 13, days: 10);
+      final atEnd = MaturityCalculator.accruedValueAt(
+        principal: 100000,
+        ratePercent: 7,
+        periodsPerYear: 4,
+        tenureMonths: 13,
+        tenureDays: 10,
+        payoutType: PayoutType.cumulative,
+        openedDate: opened,
+        maturityDate: matures,
+        asOf: matures,
+      );
+      final maturity = MaturityCalculator.maturityValueRaw(
+        principal: 100000,
+        ratePercent: 7,
+        periodsPerYear: 4,
+        tenureMonths: 13,
+        tenureDays: 10,
+        payoutType: PayoutType.cumulative,
+      );
+      expect(atEnd, closeTo(maturity, 0.01));
+    });
+  });
+
   group('MaturityCalculator.payoutPerPeriodRaw', () {
     test('splits annual interest evenly across periods', () {
       final perPeriod = MaturityCalculator.payoutPerPeriodRaw(principal: 10000, ratePercent: 7.4, periodsPerYear: 4);
@@ -147,8 +224,26 @@ void main() {
         closedDate: closed,
       );
 
-      // 10000 + 10000 * 0.074 * (365/365.25) ≈ 10739.49
-      expect(value, closeTo(10739.49, 0.5));
+      // 10000 + 10000 * 0.074 * (365/365) = 10740
+      expect(value, closeTo(10740, 0.01));
+    });
+
+    test('takes the premature-withdrawal penalty off the rate', () {
+      final value = MaturityCalculator.closedEarlyValue(
+        principal: 10000,
+        ratePercent: 7.4,
+        openedDate: DateTime(2026, 1, 1),
+        closedDate: DateTime(2027, 1, 1),
+        penaltyPercent: 1,
+      );
+
+      // 10000 + 10000 * 0.064 = 10640
+      expect(value, closeTo(10640, 0.01));
+    });
+
+    test('default penalty is 0.5% below ₹5 lakh and 1% from ₹5 lakh up', () {
+      expect(MaturityCalculator.defaultPrematurePenaltyPercent(499999), 0.5);
+      expect(MaturityCalculator.defaultPrematurePenaltyPercent(500000), 1.0);
     });
   });
 

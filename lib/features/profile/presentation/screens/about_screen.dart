@@ -51,8 +51,9 @@ class AboutScreen extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Your data stays on this device unless you connect Google Drive backup. '
-                      "FixedWise has no server of its own and doesn't share your information with anyone.",
+                      "FixedWise works fully offline — it doesn't even have internet permission. Your data "
+                      'stays on this device and in backups you choose: a folder you pick, and Android\'s own '
+                      'device backup if you have it turned on. No ads, no trackers, no accounts.',
                       style: AppTypography.dateLine,
                     ),
                   ),

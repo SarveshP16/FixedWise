@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../theme/app_colors.dart';
 import 'app_lock_controller.dart';
+import 'pin_service.dart';
 import 'widgets/pin_entry_view.dart';
 
 /// Confirms you know the current PIN (used before changing or removing
@@ -35,8 +36,10 @@ class _PinVerifyScreenState extends ConsumerState<_PinVerifyScreen> {
     if (ok) {
       Navigator.of(context).pop(true);
     } else {
+      final lockout = await ref.read(pinServiceProvider).lockoutRemaining();
+      if (!mounted) return;
       setState(() {
-        _error = 'Incorrect PIN';
+        _error = pinRejectedMessage(lockout);
         _attempt++;
       });
     }

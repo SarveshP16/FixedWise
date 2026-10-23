@@ -3,16 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/backup/auto_backup.dart';
 import '../../../../core/backup/auto_backup_frequency.dart';
+import '../../../../core/backup/backup_folder_service.dart';
 import '../../../../core/backup/backup_models.dart';
-import '../../../../core/backup/google_drive_backup_service.dart';
 import '../../../../core/backup/local_backup_service.dart';
 import '../../../../core/notifications/maturity_reminder_service.dart';
 import '../../../../core/notifications/maturity_reminder_sync.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/theme_preference.dart';
-import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/utils/currency_formatter.dart' show settingsRepositoryProvider;
 import '../../../../core/widgets/fixedwise_card.dart';
 import '../../../../core/widgets/fixedwise_field_shell.dart';
 import '../../../../core/widgets/fixedwise_segmented_control.dart';
@@ -44,7 +45,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindingObserver {
   late final TextEditingController _nameController;
-  late final TextEditingController _currencyController;
 
   /// `null` while the first check is still in flight. Re-checked whenever
   /// the app resumes, since granting it happens on the OS Settings screen
@@ -57,7 +57,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _nameController = TextEditingController(text: ref.read(displayNameProvider));
-    _currencyController = TextEditingController(text: ref.read(currencySymbolProvider));
     _refreshExactAlarmStatus();
   }
 
@@ -65,7 +64,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
-    _currencyController.dispose();
     super.dispose();
   }
 
@@ -82,7 +80,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
   @override
   Widget build(BuildContext context) {
     final leadDays = ref.watch(notificationLeadDaysProvider);
-    final driveEmail = ref.watch(googleDriveConnectedEmailProvider);
+    final backupFolder = ref.watch(backupFolderProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -105,19 +103,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
                         onChanged: (value) => ref
                             .read(displayNameProvider.notifier)
                             .setName(value.trim().isEmpty ? 'there' : value.trim()),
-                      ),
-                    ),
-                  ),
-                  FixedwiseFieldShell(
-                    label: 'Currency symbol',
-                    child: FixedwiseInputBox(
-                      child: TextField(
-                        controller: _currencyController,
-                        style: AppTypography.inputText,
-                        decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                        onChanged: (value) => ref
-                            .read(currencySymbolProvider.notifier)
-                            .setSymbol(value.trim().isEmpty ? '₹' : value.trim()),
                       ),
                     ),
                   ),
@@ -204,29 +189,56 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _importFromFile,
                   ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.cloud_outlined),
-                    title: const Text('Google Drive backup'),
-                    subtitle: Text(driveEmail == null ? 'Not connected' : 'Connected as $driveEmail'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _openGoogleDriveOptions(driveEmail),
-                  ),
-                  if (driveEmail != null) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(left: 40, bottom: 8),
-                      child: Text(_lastBackupLabel(), style: AppTypography.dateLine),
+                  if (BackupFolderService.instance.isSupported) ...[
+                    const Divider(height: 24),
+                    Text('Automatic backups', style: AppTypography.sectionTitle),
+                    const SizedBox(height: 4),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.folder_outlined),
+                      title: const Text('Backup folder'),
+                      subtitle: Text(backupFolder?.name ?? 'Not set — tap to choose a folder'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: _chooseBackupFolder,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 40),
-                      child: FixedwiseFieldShell(
-                        label: 'Auto backup',
-                        child: FixedwiseSegmentedControl<AutoBackupFrequency>(
-                          options: AutoBackupFrequency.values,
-                          labelBuilder: (value) => value.label,
-                          value: ref.watch(autoBackupFrequencyProvider),
-                          onChanged: (value) => ref.read(autoBackupFrequencyProvider.notifier).setFrequency(value),
+                    if (backupFolder != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(left: 40),
+                        child: FixedwiseFieldShell(
+                          label: 'Back up automatically',
+                          child: FixedwiseSegmentedControl<AutoBackupFrequency>(
+                            options: AutoBackupFrequency.values,
+                            labelBuilder: (value) => value.label,
+                            value: ref.watch(autoBackupFrequencyProvider),
+                            onChanged: (value) => ref.read(autoBackupFrequencyProvider.notifier).setFrequency(value),
+                          ),
                         ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 40, bottom: 4),
+                        child: Text(_lastBackupLabel(), style: AppTypography.dateLine),
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.save_outlined),
+                        title: const Text('Back up now'),
+                        onTap: _backUpNow,
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.restore),
+                        title: const Text('Restore from backup folder'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _restoreFromFolder,
+                      ),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'FixedWise keeps the last $autoBackupsToKeep automatic backups in this folder. Pick a folder '
+                        'your sync app mirrors (Nextcloud, Syncthing, Drive…) for an off-device copy. Android also '
+                        'backs up app data to your Google account when device backup is on.',
+                        style: AppTypography.dateLine,
                       ),
                     ),
                   ],
@@ -283,9 +295,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
     }
     if (backup == null || !mounted) return;
 
+    await _confirmAndApply(backup);
+  }
+
+  /// Shared tail of every restore path: confirm (naming the backup's own
+  /// date), apply, then refresh everything that reads the restored boxes.
+  Future<void> _confirmAndApply(ParsedBackup backup) async {
     final dateText = backup.exportedAt == null
         ? 'an unknown date'
-        : DateFormat('d MMM yyyy').format(backup.exportedAt!);
+        : DateFormat('d MMM yyyy, h:mm a').format(backup.exportedAt!);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -306,13 +324,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
       ..invalidate(holdersProvider)
       ..invalidate(fixedDepositsProvider)
       ..invalidate(displayNameProvider)
-      ..invalidate(currencySymbolProvider)
       ..invalidate(notificationLeadDaysProvider)
-      ..invalidate(googleDriveConnectedEmailProvider)
       ..invalidate(autoBackupFrequencyProvider)
-      ..invalidate(lastGoogleDriveBackupAtProvider);
+      ..invalidate(themePreferenceProvider);
     _nameController.text = ref.read(displayNameProvider);
-    _currencyController.text = ref.read(currencySymbolProvider);
     await rescheduleAll(ref.read(fixedDepositsProvider), leadDays: ref.read(notificationLeadDaysProvider));
 
     if (!mounted) return;
@@ -320,7 +335,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
   }
 
   String _lastBackupLabel() {
-    final lastBackupAt = ref.watch(lastGoogleDriveBackupAtProvider);
+    final lastBackupAt = ref.watch(lastAutoBackupAtProvider);
     if (lastBackupAt == null) return 'No backup yet';
     return 'Last backup: ${DateFormat('d MMM yyyy, h:mm a').format(lastBackupAt)}';
   }
@@ -331,79 +346,84 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with WidgetsBindi
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _openGoogleDriveOptions(String? connectedEmail) async {
-    if (connectedEmail == null) {
-      try {
-        final email = await GoogleDriveBackupService.instance.connect();
-        await ref.read(googleDriveConnectedEmailProvider.notifier).setEmail(email);
-      } catch (error) {
-        if (mounted) _showMessage('$error');
-      }
+  Future<void> _chooseBackupFolder() async {
+    final BackupFolder? folder;
+    try {
+      folder = await BackupFolderService.instance.pickFolder();
+    } catch (error) {
+      if (mounted) _showMessage("Couldn't use that folder: $error");
+      return;
+    }
+    if (folder == null) return;
+
+    final previous = ref.read(backupFolderProvider);
+    if (previous != null && previous.treeUri != folder.treeUri) {
+      await BackupFolderService.instance.release(previous.treeUri);
+    }
+    await ref.read(backupFolderProvider.notifier).setFolder(folder);
+    // Choosing a folder is a clear signal backups are wanted — don't make
+    // the user find a second switch before anything actually happens.
+    if (ref.read(autoBackupFrequencyProvider) == AutoBackupFrequency.off) {
+      await ref.read(autoBackupFrequencyProvider.notifier).setFrequency(AutoBackupFrequency.weekly);
+    }
+    await _backUpNow();
+  }
+
+  Future<void> _backUpNow() async {
+    try {
+      final at = await backUpToFolderNow(settings: ref.read(settingsRepositoryProvider));
+      ref.read(lastAutoBackupAtProvider.notifier).record(at);
+      if (mounted) _showMessage('Backed up to ${ref.read(backupFolderProvider)?.name ?? 'your folder'}');
+    } catch (error) {
+      if (mounted) _showMessage('Backup failed: $error');
+    }
+  }
+
+  Future<void> _restoreFromFolder() async {
+    final folder = ref.read(backupFolderProvider);
+    if (folder == null) return;
+
+    final List<BackupFolderFile> files;
+    try {
+      files =
+          (await BackupFolderService.instance.listFiles(folder.treeUri))
+              .where((file) => file.name.startsWith('fixedwise-') && file.name.endsWith('.json'))
+              .toList()
+            ..sort((a, b) => b.lastModified.compareTo(a.lastModified));
+    } catch (error) {
+      if (mounted) _showMessage("Couldn't read the backup folder: $error");
+      return;
+    }
+    if (!mounted) return;
+    if (files.isEmpty) {
+      _showMessage('No FixedWise backups in ${folder.name} yet');
       return;
     }
 
-    final action = await showModalBottomSheet<String>(
+    final chosen = await showModalBottomSheet<BackupFolderFile>(
       context: context,
       builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: ListView(
+          shrinkWrap: true,
           children: [
-            ListTile(
-              leading: const Icon(Icons.cloud_upload_outlined),
-              title: const Text('Back up now'),
-              onTap: () => Navigator.of(context).pop('backup'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.cloud_download_outlined),
-              title: const Text('Restore from Drive'),
-              onTap: () => Navigator.of(context).pop('restore'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.link_off),
-              title: const Text('Disconnect'),
-              onTap: () => Navigator.of(context).pop('disconnect'),
-            ),
+            for (final file in files)
+              ListTile(
+                leading: const Icon(Icons.description_outlined),
+                title: Text(file.name),
+                subtitle: Text(DateFormat('d MMM yyyy, h:mm a').format(file.lastModified)),
+                onTap: () => Navigator.of(context).pop(file),
+              ),
           ],
         ),
       ),
     );
-    if (action == null || !mounted) return;
+    if (chosen == null || !mounted) return;
 
-    switch (action) {
-      case 'backup':
-        try {
-          await GoogleDriveBackupService.instance.backup();
-          await ref.read(lastGoogleDriveBackupAtProvider.notifier).recordNow();
-          if (mounted) _showMessage('Backed up to Google Drive');
-        } catch (error) {
-          if (mounted) _showMessage('$error');
-        }
-      case 'restore':
-        try {
-          final backup = await GoogleDriveBackupService.instance.restore();
-          if (backup == null) {
-            if (mounted) _showMessage('No Drive backup found yet');
-            return;
-          }
-          await backup.apply();
-          ref
-            ..invalidate(holdersProvider)
-            ..invalidate(fixedDepositsProvider)
-            ..invalidate(displayNameProvider)
-            ..invalidate(currencySymbolProvider)
-            ..invalidate(notificationLeadDaysProvider)
-            ..invalidate(autoBackupFrequencyProvider)
-            ..invalidate(lastGoogleDriveBackupAtProvider);
-          _nameController.text = ref.read(displayNameProvider);
-          _currencyController.text = ref.read(currencySymbolProvider);
-          await rescheduleAll(ref.read(fixedDepositsProvider), leadDays: ref.read(notificationLeadDaysProvider));
-          if (mounted) _showMessage('Restored from Google Drive');
-        } catch (error) {
-          if (mounted) _showMessage('$error');
-        }
-      case 'disconnect':
-        await GoogleDriveBackupService.instance.disconnect();
-        await ref.read(googleDriveConnectedEmailProvider.notifier).setEmail(null);
+    try {
+      final backup = parseBackup(await BackupFolderService.instance.readText(chosen.uri));
+      if (mounted) await _confirmAndApply(backup);
+    } catch (error) {
+      if (mounted) _showMessage('$error');
     }
   }
 }

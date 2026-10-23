@@ -13,14 +13,31 @@ class SettingsRepository {
   final Box _box;
 
   static const _displayNameKey = 'displayName';
-  static const _currencySymbolKey = 'currencySymbol';
   static const _notificationLeadDaysKey = 'notificationLeadDays';
-  static const _googleDriveConnectedEmailKey = 'googleDriveConnectedEmail';
+  static const _backupFolderUriKey = 'backupFolderUri';
+  static const _backupFolderNameKey = 'backupFolderName';
   static const _notificationPermissionsRequestedKey = 'notificationPermissionsRequested';
   static const _autoBackupFrequencyKey = 'autoBackupFrequency';
-  static const _lastGoogleDriveBackupAtKey = 'lastGoogleDriveBackupAt';
+  static const _lastAutoBackupAtKey = 'lastAutoBackupAt';
   static const _biometricUnlockEnabledKey = 'biometricUnlockEnabled';
   static const _themePreferenceKey = 'themePreference';
+
+  /// Keys left behind by features that no longer exist (Google Drive
+  /// backup, the ads/"Remove ads" purchase) — deleted once at startup by
+  /// [removeLegacyKeys] so they don't linger in exports forever.
+  static const _legacyKeys = ['googleDriveConnectedEmail', 'lastGoogleDriveBackupAt', 'adsRemoved'];
+
+  /// Settings that only make sense on the device that wrote them — a
+  /// backup-folder grant belongs to this install, and permission prompts
+  /// should be asked again on a new phone. Left out of every export (see
+  /// `buildExportJson`) and never overwritten by a restore.
+  static const deviceOnlyKeys = {
+    _backupFolderUriKey,
+    _backupFolderNameKey,
+    _lastAutoBackupAtKey,
+    _notificationPermissionsRequestedKey,
+    _biometricUnlockEnabledKey,
+  };
 
   static const defaultNotificationLeadDays = 7;
 
@@ -28,21 +45,22 @@ class SettingsRepository {
 
   Future<void> setDisplayName(String value) => _box.put(_displayNameKey, value);
 
-  String? getCurrencySymbol() => _box.get(_currencySymbolKey) as String?;
-
-  Future<void> setCurrencySymbol(String value) => _box.put(_currencySymbolKey, value);
-
   int getNotificationLeadDays() => (_box.get(_notificationLeadDaysKey) as int?) ?? defaultNotificationLeadDays;
 
   Future<void> setNotificationLeadDays(int value) => _box.put(_notificationLeadDaysKey, value);
 
-  String? getGoogleDriveConnectedEmail() => _box.get(_googleDriveConnectedEmailKey) as String?;
+  /// The Storage Access Framework tree URI of the folder automatic
+  /// backups go to — see `BackupFolderService`. `null` until chosen.
+  String? getBackupFolderUri() => _box.get(_backupFolderUriKey) as String?;
 
-  Future<void> setGoogleDriveConnectedEmail(String? value) async {
-    if (value == null) {
-      await _box.delete(_googleDriveConnectedEmailKey);
+  /// The chosen backup folder's display name, for Profile.
+  String? getBackupFolderName() => _box.get(_backupFolderNameKey) as String?;
+
+  Future<void> setBackupFolder({required String? uri, String? name}) async {
+    if (uri == null) {
+      await _box.deleteAll([_backupFolderUriKey, _backupFolderNameKey]);
     } else {
-      await _box.put(_googleDriveConnectedEmailKey, value);
+      await _box.putAll({_backupFolderUriKey: uri, _backupFolderNameKey: name});
     }
   }
 
@@ -62,13 +80,12 @@ class SettingsRepository {
 
   Future<void> setAutoBackupFrequency(AutoBackupFrequency value) => _box.put(_autoBackupFrequencyKey, value.storageKey);
 
-  DateTime? getLastGoogleDriveBackupAt() {
-    final raw = _box.get(_lastGoogleDriveBackupAtKey) as String?;
+  DateTime? getLastAutoBackupAt() {
+    final raw = _box.get(_lastAutoBackupAtKey) as String?;
     return raw == null ? null : DateTime.tryParse(raw);
   }
 
-  Future<void> setLastGoogleDriveBackupAt(DateTime value) =>
-      _box.put(_lastGoogleDriveBackupAtKey, value.toIso8601String());
+  Future<void> setLastAutoBackupAt(DateTime value) => _box.put(_lastAutoBackupAtKey, value.toIso8601String());
 
   /// Whether the app-lock screen should also offer the device's biometric/
   /// credential unlock as a quick alternative to typing the PIN — only
@@ -83,6 +100,8 @@ class SettingsRepository {
       ThemePreference.fromStorageKey((_box.get(_themePreferenceKey) as String?) ?? ThemePreference.system.storageKey);
 
   Future<void> setThemePreference(ThemePreference value) => _box.put(_themePreferenceKey, value.storageKey);
+
+  Future<void> removeLegacyKeys() => _box.deleteAll(_legacyKeys);
 
   static SettingsRepository openDefault() {
     return SettingsRepository(Hive.box(HiveBoxes.settings));

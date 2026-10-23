@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/calculations/maturity_calculator.dart';
 import '../../../../core/notifications/maturity_reminder_sync.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
@@ -23,8 +24,17 @@ import '../../domain/fixed_deposit.dart';
 /// calculator" screen) — the same shared [DepositFormFields] as the
 /// Calculator tab, plus Holder/Auto-renew/FD-number fields the mockup
 /// doesn't depict, and a CTA that actually persists the record.
+///
+/// Doubles as the "Renew" form when [renewFromId] is set (see
+/// `showRenewDepositFlow`): every field is prefilled from that original
+/// deposit — principal defaults to what it closed/matured for — but stays
+/// editable, since a renewal's rate or tenure rarely matches the original
+/// exactly. The new record it creates is otherwise a completely ordinary
+/// deposit, just with `renewedFromId` set for history.
 class NewDepositScreen extends ConsumerStatefulWidget {
-  const NewDepositScreen({super.key});
+  const NewDepositScreen({super.key, this.renewFromId});
+
+  final String? renewFromId;
 
   @override
   ConsumerState<NewDepositScreen> createState() => _NewDepositScreenState();
@@ -34,24 +44,56 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
   DraftDeposit _draft = DraftDeposit.initial();
   String? _holderId;
   bool _autoRenew = false;
+  bool _isTaxSaver = false;
   DateTime _openedDate = DateTime.now();
   final _fdNumberController = TextEditingController();
+  final _nomineeController = TextEditingController();
+  FixedDeposit? _renewSource;
+
+  @override
+  void initState() {
+    super.initState();
+    final renewFromId = widget.renewFromId;
+    if (renewFromId == null) return;
+    final matches = ref.read(fixedDepositsProvider).where((fd) => fd.id == renewFromId);
+    if (matches.isEmpty) return;
+
+    final source = matches.first;
+    _renewSource = source;
+    _draft = DraftDeposit(
+      bankName: source.bankName,
+      interestRatePercent: source.interestRatePercent,
+      principalAmount: source.closedValue ?? MaturityCalculator.maturityValue(source),
+      tenureMonths: source.tenureMonths,
+      tenureDays: source.tenureDays,
+      compounding: source.compounding,
+      payoutType: source.payoutType,
+    );
+    _holderId = source.holderId;
+    _autoRenew = source.autoRenew;
+    _fdNumberController.text = source.fdNumber ?? '';
+    _nomineeController.text = source.nomineeName ?? '';
+    _isTaxSaver = source.isTaxSaver;
+  }
 
   @override
   void dispose() {
     _fdNumberController.dispose();
+    _nomineeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final bankSuggestions = ref.watch(fixedDepositRepositoryProvider).distinctBankNames();
-    final currencySymbol = ref.watch(currencySymbolProvider);
     final holders = ref.watch(holdersProvider);
     final selfHolder = ref.watch(selfHolderProvider);
     _holderId ??= selfHolder?.id;
 
-    final canCreate = _draft.bankName.trim().isNotEmpty && _draft.principalAmount > 0 && _draft.tenureMonths > 0;
+    // Section 80C tax-saver FDs are fixed at a 5-year minimum lock-in.
+    final taxSaverTenureOk = !_isTaxSaver || _draft.tenureMonths * 30 + _draft.tenureDays >= 60 * 30;
+    final canCreate =
+        _draft.bankName.trim().isNotEmpty && _draft.principalAmount > 0 && _draft.hasValidTenure && taxSaverTenureOk;
 
     return Scaffold(
       body: SafeArea(
@@ -65,10 +107,19 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
                   children: [
                     BorderedIconButton(icon: Icons.close, size: 32, onTap: () => context.pop()),
                     const SizedBox(width: 12),
-                    Text('New deposit', style: AppTypography.detailTitle),
+                    Text(_renewSource == null ? 'New deposit' : 'Renew deposit', style: AppTypography.detailTitle),
                   ],
                 ),
               ),
+              if (_renewSource != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 0, 22, 8),
+                  child: Text(
+                    'Prefilled from the ${_renewSource!.bankName} deposit opened '
+                    '${DateFormat('d MMM yyyy').format(_renewSource!.openedDate)} — adjust anything before saving.',
+                    style: AppTypography.dateLine,
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 22),
                 child: Column(
@@ -120,11 +171,34 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
                         ),
                       ),
                     ),
+                    FixedwiseFieldShell(
+                      label: 'Nominee (optional)',
+                      child: FixedwiseInputBox(
+                        child: TextField(
+                          controller: _nomineeController,
+                          style: AppTypography.inputText,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                        ),
+                      ),
+                    ),
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
                       title: Text('Auto-renew at maturity', style: AppTypography.fieldLabel),
                       value: _autoRenew,
                       onChanged: (value) => setState(() => _autoRenew = value),
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Tax-saver FD (Section 80C)', style: AppTypography.fieldLabel),
+                      subtitle: Text(
+                        taxSaverTenureOk
+                            ? '5-year lock-in, no early closure. Up to ₹1.5 lakh a year is deductible under the old tax regime.'
+                            : 'Tax-saver FDs must run at least 5 years — raise the tenure to 60 months.',
+                        style: AppTypography.dateLine,
+                      ),
+                      value: _isTaxSaver,
+                      onChanged: (value) => setState(() => _isTaxSaver = value),
                     ),
                     const SizedBox(height: 8),
                   ],
@@ -134,7 +208,7 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(22, 16, 22, 24),
                 child: CtaButton(
-                  label: 'Create deposit',
+                  label: _renewSource == null ? 'Create deposit' : 'Save renewed deposit',
                   onPressed: canCreate && _holderId != null ? () => _create(_holderId!) : null,
                 ),
               ),
@@ -168,11 +242,15 @@ class _NewDepositScreenState extends ConsumerState<NewDepositScreen> {
       principalAmount: _draft.principalAmount,
       openedDate: _openedDate,
       tenureMonths: _draft.tenureMonths,
+      tenureDays: _draft.tenureDays,
+      isTaxSaver: _isTaxSaver,
+      nomineeName: _nomineeController.text.trim().isEmpty ? null : _nomineeController.text.trim(),
       compounding: _draft.compounding,
       payoutType: _draft.payoutType,
       autoRenew: _autoRenew,
       fdNumber: _fdNumberController.text.trim().isEmpty ? null : _fdNumberController.text.trim(),
       status: FdStatus.active,
+      renewedFromId: _renewSource?.id,
       createdAt: now,
       updatedAt: now,
     );
