@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FixedWise — private Fixed Deposit tracker for India</title>
+  <meta name="description" content="Track every Fixed Deposit your family holds, calculate maturity the way Indian banks do, and see interest, TDS and DICGC cover per financial year. Free, open source, offline — no ads, no account, no internet permission." />
+  <meta name="theme-color" content="#101A2E" />
+  <link rel="icon" type="image/png" href="assets/favicon-32.png" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="FixedWise — private Fixed Deposit tracker for India" />
+  <meta property="og:description" content="Free, open-source, offline FD tracker: bank-accurate maturity, reminders, interest per financial year, TDS and DICGC checks." />
+  <meta property="og:image" content="https://sarveshp16.github.io/FixedWise/assets/icon-512.png" />
+  <meta property="og:url" content="https://sarveshp16.github.io/FixedWise/" />
+  <style>
+    @font-face { font-family: "Fraunces"; font-weight: 500; font-display: swap; src: url("assets/fonts/Fraunces-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap; src: url("assets/fonts/IBMPlexSans-Regular.woff2") format("woff2"); }
+    @font-face { font-family: "IBM Plex Sans"; font-weight: 500; font-display: swap; src: url("assets/fonts/IBMPlexSans-Medium.woff2") format("woff2"); }
+
+    /* The app's own palette (lib/core/theme/app_colors.dart). */
+    :root {
+      --ink: #101A2E; --ink2: #18274A; --paper: #F6F2E8; --card: #FFFDF8;
+      --brass: #B8863B; --brass-deep: #8A611F; --brass-tint: #EFE0C2;
+      --sage: #4F7A5C; --sage-tint: #DDE8DE;
+      --text: #1B2430; --text-soft: #69707E; --line: #E5DDC9;
+      --hero-muted: #9AA6C4; --on-dark: #F4EFE2;
+      --shadow: 0 24px 60px -24px rgba(16, 26, 46, .35);
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #1B2644; --ink2: #26325A; --paper: #0B0F17; --card: #161E2C;
+        --brass: #D3A35E; --brass-deep: #E3B876; --brass-tint: #2C2313;
+        --sage: #83AC90; --sage-tint: #1C2A20;
+        --text: #EDEAE1; --text-soft: #9BA2B0; --line: #2A3A63;
+        --shadow: 0 24px 60px -24px rgba(0, 0, 0, .7);
+        color-scheme: dark;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--paper); color: var(--text);
+      font: 400 17px/1.6 "IBM Plex Sans", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--brass-deep); }
+    h1, h2, h3 { font-family: "Fraunces", Georgia, serif; font-weight: 500; line-height: 1.12; margin: 0; letter-spacing: -.01em; }
+    .wrap { width: min(1120px, 100% - 40px); margin-inline: auto; }
+    .eyebrow { font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--brass-deep); }
+
+    /* Nav */
+    nav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+    nav .wrap { display: flex; align-items: center; gap: 24px; height: 64px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-family: "Fraunces", Georgia, serif; font-size: 21px; }
+    .brand img { width: 32px; height: 32px; border-radius: 8px; }
+    nav ul { display: flex; gap: 22px; list-style: none; margin: 0 0 0 auto; padding: 0; }
+    nav ul a { color: var(--text-soft); text-decoration: none; font-size: 15px; }
+    nav ul a:hover { color: var(--text); }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 999px; font-weight: 500; font-size: 16px; text-decoration: none; border: 1px solid transparent; transition: transform .15s ease, background .15s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--brass); color: #2A1C05; }
+    .btn-primary:hover { background: var(--brass-deep); color: var(--on-dark); }
+    .btn-ghost { border-color: var(--line); color: var(--text); background: var(--card); }
+    .btn svg { width: 18px; height: 18px; }
+
+    /* Hero */
+    .hero { padding: 72px 0 56px; }
+    .hero .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px; align-items: center; }
+    .hero h1 { font-size: clamp(40px, 5.6vw, 64px); margin: 14px 0 20px; }
+    .hero p.lead { font-size: 19px; color: var(--text-soft); margin: 0 0 30px; max-width: 34em; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .facts { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 26px 0 0; padding: 0; list-style: none; font-size: 14px; color: var(--text-soft); }
+    .facts li::before { content: "✓"; color: var(--sage); margin-right: 6px; font-weight: 500; }
+    .phone { justify-self: center; width: min(320px, 78vw); border-radius: 36px; padding: 10px; background: var(--ink); box-shadow: var(--shadow); }
+    .phone img { display: block; width: 100%; border-radius: 28px; }
+
+    /* Promise strip */
+    .promise { background: var(--ink); color: var(--on-dark); }
+    .promise .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 30px 0; text-align: center; }
+    .promise b { display: block; font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 30px; }
+    .promise span { color: var(--hero-muted); font-size: 14px; }
+
+    section { padding: 88px 0; }
+    .section-head { max-width: 40em; margin-bottom: 40px; }
+    .section-head h2 { font-size: clamp(30px, 3.6vw, 42px); margin-top: 10px; }
+    .section-head p { color: var(--text-soft); margin: 14px 0 0; }
+
+    /* Screenshots */
+    .shots { display: grid; grid-auto-flow: column; grid-auto-columns: 220px; gap: 20px; overflow-x: auto; padding: 6px 4px 22px; scroll-snap-type: x mandatory; }
+    .shots figure { margin: 0; scroll-snap-align: start; }
+    .shots img { display: block; width: 100%; border-radius: 22px; border: 1px solid var(--line); box-shadow: 0 14px 30px -18px rgba(16, 26, 46, .35); }
+    .shots figcaption { text-align: center; font-size: 14px; color: var(--text-soft); margin-top: 10px; }
+
+    /* Features */
+    .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 28px; }
+    .card .icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brass-tint); color: var(--brass-deep); margin-bottom: 18px; }
+    .card .icon svg { width: 22px; height: 22px; }
+    .card h3 { font-size: 24px; margin-bottom: 12px; }
+    .card ul { margin: 0; padding-left: 20px; color: var(--text-soft); }
+    .card li { margin: 6px 0; }
+    .card li b { color: var(--text); font-weight: 500; }
+
+    /* Tables */
+    .table-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    th, td { text-align: left; padding: 16px 22px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    th { font-weight: 500; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-soft); background: color-mix(in srgb, var(--brass-tint) 45%, var(--card)); }
+    td code { font-size: 14px; background: var(--paper); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+    .note { font-size: 14px; color: var(--text-soft); margin-top: 14px; }
+
+    /* Download */
+    .download { background: var(--ink); color: var(--on-dark); border-radius: 28px; padding: 56px; display: grid; grid-template-columns: 1.2fr .8fr; gap: 40px; align-items: center; }
+    .download h2 { font-size: clamp(30px, 3.6vw, 42px); }
+    .download p { color: var(--hero-muted); }
+    .download .eyebrow { color: var(--brass); }
+    .download .btn-ghost { background: transparent; color: var(--on-dark); border-color: rgba(244, 239, 226, .25); }
+    .download ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+    .download li { background: rgba(244, 239, 226, .06); border: 1px solid rgba(244, 239, 226, .12); border-radius: 16px; padding: 16px 18px; font-size: 15px; }
+    .download li b { display: block; font-weight: 500; color: var(--on-dark); }
+    .download li span { color: var(--hero-muted); }
+
+    /* Support */
+    .support { text-align: center; }
+    .support h2 { font-size: clamp(28px, 3.2vw, 36px); margin: 10px 0 12px; }
+    .support p { color: var(--text-soft); margin: 0 auto 26px; max-width: 32em; }
+    .btn-kofi { background: #29ABE0; color: #fff; }
+    .btn-kofi:hover { background: #1f93c3; }
+
+    footer { border-top: 1px solid var(--line); padding: 36px 0 48px; font-size: 14px; color: var(--text-soft); }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
+    footer p { margin: 0; max-width: 46em; }
+
+    @media (max-width: 880px) {
+      nav ul { display: none; }
+      .hero { padding-top: 44px; }
+      .hero .wrap, .two-col, .download { grid-template-columns: 1fr; }
+      .features { grid-template-columns: 1fr; }
+      .promise .wrap { grid-template-columns: repeat(2, 1fr); }
+      .download { padding: 36px 26px; }
+      section { padding: 64px 0; }
+      th, td { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="wrap">
+      <a class="brand" href="#top"><img src="assets/icon-192.png" alt="" />FixedWise</a>
+      <ul>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a href="#download">Download</a></li>
+        <li><a href="https://github.com/SarveshP16/FixedWise">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Free &amp; open source · Built for India</span>
+        <h1>Every fixed deposit your family holds, in one private place.</h1>
+        <p class="lead">Track FDs across your family, see what's maturing next, get reminded before it does, and know how much interest each person earns per financial year — with TDS and DICGC checks.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/SarveshP16/FixedWise/releases/latest">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
+            Download APK
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/SarveshP16/FixedWise">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+            View source
+          </a>
+        </div>
+        <ul class="facts">
+          <li>Android 7.0+</li>
+          <li>No ads or trackers</li>
+          <li>No account</li>
+          <li>No internet permission</li>
+        </ul>
+      </div>
+      <div class="phone"><img src="assets/screens/1.webp" width="540" height="1119" alt="FixedWise dashboard showing total deposits, a maturity ladder and deposits maturing soon" /></div>
+    </div>
+  </header>
+
+  <div class="promise">
+    <div class="wrap">
+      <div><b>0</b><span>ads or trackers</span></div>
+      <div><b>0</b><span>accounts to create</span></div>
+      <div><b>100%</b><span>on your phone</span></div>
+      <div><b>GPL-3.0</b><span>open source</span></div>
+    </div>
+  </div>
+
+  <section id="screenshots">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Screenshots</span>
+        <h2>Clear figures, the way your bank quotes them.</h2>
+      </div>
+      <div class="shots">
+        <figure><img src="assets/screens/1.webp" loading="lazy" width="540" height="1119" alt="Dashboard" /><figcaption>Dashboard</figcaption></figure>
+        <figure><img src="assets/screens/2.webp" loading="lazy" width="540" height="1119" alt="All deposits with filters and totals" /><figcaption>All deposits</figcaption></figure>
+        <figure><img src="assets/screens/3.webp" loading="lazy" width="540" height="1119" alt="Deposit detail with growth curve" /><figcaption>Deposit detail</figcaption></figure>
+        <figure><img src="assets/screens/4.webp" loading="lazy" width="540" height="1119" alt="Interest and maturity calculator" /><figcaption>Calculator</figcaption></figure>
+        <figure><img src="assets/screens/5.webp" loading="lazy" width="540" height="1119" alt="Interest and TDS per financial year" /><figcaption>Interest &amp; TDS</figcaption></figure>
+        <figure><img src="assets/screens/6.webp" loading="lazy" width="540" height="1119" alt="Automatic folder backups" /><figcaption>Automatic backups</figcaption></figure>
+        <figure><img src="assets/screens/7.webp" loading="lazy" width="540" height="1119" alt="Dashboard in dark theme" /><figcaption>Dark theme</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" style="padding-top: 24px;">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Features</span>
+        <h2>Everything an Indian FD needs — nothing it doesn't.</h2>
+      </div>
+      <div class="features">
+        <article class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 4l9 6M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18"/></svg></div>
+          <h3>Track every deposit</h3>
+          <ul>
+            <li><b>All your family's FDs</b>, tagged to holders — you, a parent, a spouse — and filterable by them.</li>
+            <li>A <b>maturity ladder</b> and a <i>maturing soon</i> list on the dashboard.</li>
+            <li><b>Reminders</b> a few days before each FD matures.</li>
+            <li><b>Renew</b> in one tap, or <b>close early</b> and record what the bank actually paid.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2m4 0h2M8 16h2m4 0h2"/></svg></div>
+          <h3>Calculated the way banks do</h3>
+          <ul>
+            <li><b>Cumulative or payout</b> — monthly, quarterly, half-yearly or annual.</li>
+            <li><b>Tenures in months and days</b>: 444 days, 1 year 15 days, 7 days to 10 years.</li>
+            <li><b>Bank-accurate interest</b>, including simple interest under 6 months and on leftover days.</li>
+            <li><b>Tax-saver (80C) FDs</b> with the 5-year lock-in, nominees, and ₹12,34,567 formatting.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10v18l-3-2-2 2-2-2-3 2V3Z"/><path d="M10 8h4m-4 4h4"/></svg></div>
+          <h3>Tax &amp; safety</h3>
+          <ul>
+            <li><b>Interest per financial year</b> (April–March), per holder and per bank.</li>
+            <li><b>TDS estimate</b> under Section 194A — ₹50,000 threshold, ₹1 lakh for senior citizens.</li>
+            <li><b>DICGC check</b>: a warning when one person has more than ₹5 lakh at a single bank.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+          <h3>Private by design</h3>
+          <ul>
+            <li><b>No internet permission</b> — no ads, trackers, account or server.</li>
+            <li><b>App lock</b> with PIN or fingerprint; screenshots blocked while locked.</li>
+            <li><b>Automatic backups</b> to a folder you choose, plus export and import.</li>
+            <li><b>Light and dark themes</b>, following your system.</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy" style="padding-top: 24px;">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Privacy &amp; maths</span>
+        <h2>Nothing leaves your phone. Here's exactly what it does.</h2>
+        <p>Everything is stored on your device. Nothing goes anywhere unless you export a backup or have Android device backup turned on.</p>
+      </div>
+      <div class="two-col">
+        <div class="table-card">
+          <table>
+            <thead><tr><th>Permission</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td>Notifications, exact alarms, run at startup</td><td>Maturity reminders, re-scheduled after a reboot</td></tr>
+              <tr><td>Biometric</td><td>Optional fingerprint unlock for the app lock</td></tr>
+              <tr><td><i>No storage permission</i></td><td>Backups use Android's folder picker — the app only sees the folder you choose</td></tr>
+              <tr><td><i>No internet</i></td><td>The app cannot send anything anywhere</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div class="table-card">
+            <table>
+              <thead><tr><th>Case</th><th>How it's calculated</th></tr></thead>
+              <tbody>
+                <tr><td>Cumulative, 6 months+</td><td><code>P × (1 + r/n)<sup>k</sup> × (1 + r × d/365)</code><br />Whole periods compounded, then simple interest on the remaining days</td></tr>
+                <tr><td>Cumulative, under 6 months</td><td><code>P × (1 + r × days/365)</code></td></tr>
+                <tr><td>Payout</td><td><code>P × r / n</code> every period, principal back at maturity</td></tr>
+                <tr><td>Closed early</td><td>Rate minus the bank's penalty, for the days held — or the exact amount you enter</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">Figures are estimates to help you plan — your bank's statement is the final word.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="download" style="padding-top: 24px;">
+    <div class="wrap">
+      <div class="download">
+        <div>
+          <span class="eyebrow">Download</span>
+          <h2 style="margin: 10px 0 14px;">Get FixedWise for Android</h2>
+          <p>Free, signed APK for every Android phone running 7.0 or newer. Each release lists the file's SHA-256 so you can verify it.</p>
+          <div class="cta-row" style="margin-top: 26px;">
+            <a class="btn btn-primary" href="https://github.com/SarveshP16/FixedWise/releases/latest">Download latest APK</a>
+            <a class="btn btn-ghost" href="https://github.com/SarveshP16/FixedWise/blob/main/CHANGELOG.md">What's new</a>
+          </div>
+        </div>
+        <ul>
+          <li><b>GitHub Releases</b><span>Available now</span></li>
+          <li><b>F-Droid</b><span>Submission in progress</span></li>
+          <li><b>Build from source</b><span>Flutter 3.47 · <a href="https://github.com/SarveshP16/FixedWise#build-from-source" style="color: var(--brass);">instructions</a></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="support" style="padding-top: 8px;">
+    <div class="wrap">
+      <span class="eyebrow">Support</span>
+      <h2>Free, with no ads — and it'll stay that way.</h2>
+      <p>If FixedWise helps you keep track of your family's money, you can buy me a coffee.</p>
+      <a class="btn btn-kofi" href="https://ko-fi.com/crystaxit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Zm13 1h1.5a2.5 2.5 0 0 1 0 5H17M7 3v2m4-2v2"/></svg>
+        Support on Ko-fi
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>FixedWise is open source under the <a href="https://github.com/SarveshP16/FixedWise/blob/main/LICENSE">GNU GPL v3.0</a>. It gives estimates to help you plan and is not financial or tax advice — always confirm figures with your bank and a tax professional.</p>
+      <p><a href="https://github.com/SarveshP16/FixedWise">Source</a> · <a href="https://github.com/SarveshP16/FixedWise/issues">Report an issue</a></p>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -15,7 +15,7 @@ and know how much interest each person earns per financial year — with TDS and
 ![No internet permission](https://img.shields.io/badge/internet%20permission-none-3c7a5a)
 ![Built with Flutter](https://img.shields.io/badge/built%20with-Flutter-02569B)
 
-[**Download APK**](https://github.com/SarveshP16/FixedWise/releases/latest) · [Features](#features) · [Getting started](#getting-started) · [Privacy](#privacy--permissions) · [Build from source](#build-from-source)
+[**Website**](https://sarveshp16.github.io/FixedWise/) · [**Download APK**](https://github.com/SarveshP16/FixedWise/releases/latest) · [Features](#features) · [Getting started](#getting-started) · [Privacy](#privacy--permissions) · [Build from source](#build-from-source)
 
 <a href="https://ko-fi.com/crystaxit"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi" /></a>
 
