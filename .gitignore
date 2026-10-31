@@ -54,3 +54,6 @@ app.*.map.json
 *.jks
 *.keystore
 key.properties
+
+# Personal to-do list, kept local only
+TODO.md

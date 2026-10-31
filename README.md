@@ -168,7 +168,7 @@ If the repo lives on a different drive from your pub cache or Android SDK, Kotli
 
 ## Roadmap
 
-Ideas that are planned but not built yet live in [TODO.md](TODO.md) — Form 15G/15H tracking, a "PAN linked" flag per holder, password-protected backups, and editing an existing deposit. Bug reports and pull requests are welcome in [Issues](https://github.com/SarveshP16/FixedWise/issues).
+Ideas that are planned but not built yet include Form 15G/15H tracking, a "PAN linked" flag per holder, password-protected backups, and editing an existing deposit. Bug reports and pull requests are welcome in [Issues](https://github.com/SarveshP16/FixedWise/issues).
 
 ## Support
 
